@@ -53,8 +53,6 @@ class WindowClass(QMainWindow, form_class):
         self.initUI()
         self.loadConfig()
 
-        self.progress_update_signal.connect(self.update_progress_bar)
-
         ##### 오브젝트 초기화 #####
         # 스레드와 중단 플래그
         self.thread_train = None
@@ -197,7 +195,9 @@ class WindowClass(QMainWindow, form_class):
 
         ##### VAE 학습 시작 #####
         try:
-            self.append_to_console("VAE 학습 시작...")
+            # 메인 스레드에서 콘솔에 메시지를 출력
+            # 다른 스레드에서 콘솔 변경을 시도하는건 맞지 않음
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "VAE 학습 시작..."))
 
             def update_progress(epoch):
                 """
