@@ -174,8 +174,8 @@ def train(config, stop_flag, progress_callback=None):
                 print("학습 중지 요청됨. 학습을 종료합니다.")
                 release_cuda(model=model, 
                              lpips_model=lpips_model, 
-                             discriminator=discriminator, 
-                             optimizer_d=optimizer_d, 
+                             discriminator=discriminator,
+                             optimizer_d=optimizer_d,
                              optimizer_g=optimizer_g)
                 return
             
@@ -212,20 +212,23 @@ def train(config, stop_flag, progress_callback=None):
     # 학습 완료 이후 model을 VRAM으로부터 release
     print('Releasing model from GPU')
     
-    release_cuda(model, lpips_model, discriminator, optimizer_d, optimizer_g)
+    release_cuda(model=model, 
+                 lpips_model=lpips_model, 
+                 discriminator=discriminator,
+                 optimizer_d=optimizer_d,
+                 optimizer_g=optimizer_g)
     ############ VRAM release 부분 #########
     
     print('Done Training...')
 
 
-def release_cuda(model, lpips_model, discriminator, optimizer_d=None, optimizer_g=None):
+def release_cuda(model, lpips_model, discriminator, optimizer_d, optimizer_g):
     """
     VAE 학습 cuda 점유 객체 release
     """
-    # optimizer는 모델 파라미터와 연관된 상태를 가지고 있으므로 옵티마이저를 해제해야 합니다.
     optimizer_d = None
     optimizer_g = None
-    
+
     # 모델과 관련된 모든 객체들을 해제해야 합니다.
     model.to('cpu')           # 모델을 CPU로 이동
     model = None              # 모델 객체 해제

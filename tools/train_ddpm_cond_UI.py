@@ -233,7 +233,13 @@ def train(config, stop_flag):
             # ****** 학습 중지 플래그 확인 ******
             if stop_flag():  # stop_flag가 True이면 학습 중단
                 print("학습 중지 요청됨. 학습을 종료합니다.")
-                release_cuda(model, optimizer, vae, text_model, empty_text_embed, text_tokenizer, scheduler)
+                release_cuda(model=model, 
+                             optimizer=optimizer, 
+                             vae=vae, 
+                             text_model=text_model, 
+                             empty_text_embed=empty_text_embed, 
+                             text_tokenizer=text_tokenizer, 
+                             scheduler=scheduler)
                 return
 
         print('Finished epoch:{} | Loss : {:.4f}'.format(

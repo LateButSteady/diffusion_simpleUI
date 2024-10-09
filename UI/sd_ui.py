@@ -20,7 +20,7 @@ from tools.sample_ddpm_text_cond_UI import infer
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication, QWidget, QDialog, QMainWindow, QVBoxLayout, QTextBrowser, QMessageBox, QComboBox
 from PyQt5.QtGui import QIcon, QColor
-from PyQt5.QtCore import Qt, QMetaObject, Q_ARG, pyqtSignal
+from PyQt5.QtCore import Qt, QMetaObject, Q_ARG, pyqtSignal, pyqtSlot
 
 
 def resource_path(relative_path):
@@ -100,6 +100,12 @@ class WindowClass(QMainWindow, form_class):
 
     # UI 업데이트가 메인 스레드에서 안전하게 실행되도록 함
     # thread에서 UI 업데이트 발생하는건 좋지 않음
+    # chatGPT: 메소드 시그니처 불일치: 
+    #   - QMetaObject::invokeMethod는 대상 메소드의 정확한 시그니처(매개변수 포함)를 요구합니다. 
+    #   - PyQt에서는 기본적으로 append_to_console과 같은 메소드를 자동으로 슬롯으로 인식하지 않습니다.
+    #   => pyqtSlot 데코레이터를 사용하여 append_to_console 메소드를 슬롯으로 등록하면,
+    #      메소드가 C++의 시그널-슬롯 시스템과 연결되어 해당 메소드를 정확히 호출할 수 있음
+    @pyqtSlot(str)
     def append_to_console(self, message):
         """
         메인 스레드에서 콘솔에 메시지 추가
@@ -125,7 +131,7 @@ class WindowClass(QMainWindow, form_class):
         """
         dataset 유효성 검사
         """
-        self.append_to_console("데이터셋 검사 시작...")
+        QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"데이터셋 검사 시작..."))
 
         self.pathImg = self.edit_pathImg.toPlainText()
         self.config["dataset_params"]["im_path"] = self.pathImg
@@ -135,25 +141,24 @@ class WindowClass(QMainWindow, form_class):
         # caption, img 폴더 유무
         if not os.path.exists(dir_caption) or not os.path.exists(dir_img):
             msg = "[에러] 데이터셋 검사 - Fail: 폴더/파일을 찾을 수 없음"
-            self.append_to_console(msg)
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, msg))
             return False#, msg
 
         # caption 파일들 보면서 불량명 취합 --> dropdown 업데이트
         # 불량명 combobox 업데이트
-        self.append_to_console("불량명 취합 시작...")
+        QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"불량명 취합 시작..."))
         defects = self.get_defects()
         if not defects:
             msg = "[에러] 불량명 취합 - Fail: 불량명을 찾을 수 없음"
-            self.append_to_console(msg)
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, msg))
             return False#, msg
         # 메인 스레드에서 콤보박스 업데이트 실행
         self.update_defect_combobox(defects)
-        self.append_to_console("불량명 취합 - OK")
+        QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "불량명 취합 - OK"))
                 
         # TODO caption에는 있는데, img에는 없는 (vice versa) 불일치 파일 체크
 
-
-        self.append_to_console("데이터셋 검사 - OK")
+        QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"데이터셋 검사 - OK"))
 
         return True # error msg를 console에 출력하기 위해 msg도 return 고려
 
@@ -211,13 +216,13 @@ class WindowClass(QMainWindow, form_class):
 
             # ****** 학습 중지 플래그 확인 ******
             if self.stop_training_flag:
-                self.append_to_console("VAE 학습 중지됨.")
+                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "VAE 학습 중지됨."))
             else:
-                self.append_to_console("VAE 학습 완료")
+                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "VAE 학습 완료"))
 
         except Exception as e:
             self.show_error_dialog("VAE 학습 실패")
-            self.append_to_console(f"[에러] VAE 학습 실패: {e}")
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"[에러] VAE 학습 실패: {e}"))
         finally:
             self.thread_train = None
             # 다른 영역 재활성화
@@ -278,26 +283,25 @@ class WindowClass(QMainWindow, form_class):
             self.show_error_dialog(f"""VAE 모델 파일 일부를 찾을 수 없습니다.
  - {self.config["train_params"]["task_name"]}/vqvae_autoencoder_ckpt.pth
  - {self.config["train_params"]["task_name"]}/vqvae_discriminator_ckpt.pth""")
-            self.append_to_console("[에러] VAE 모델 파일 없음")
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"[에러] VAE 모델 파일 없음"))
             return
 
 
         ##### DDPM 학습 실행 #####
         try:
-            self.append_to_console("Diffusion 학습 시작...")
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Diffusion 학습 시작..."))
             
             # 학습 함수 호출 시 언제든지 중지할수 있도록 stop_flag 함수 전달
             run_train_ddpm(self.config, self.is_training_stopped)
             
             # ****** 학습 중지 플래그 확인 ******
             if self.stop_training_flag:
-                self.append_to_console("Diffusion 학습 중지됨.")
+                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Diffusion 학습 중지됨."))
             else:
-                self.append_to_console("Diffusion 학습 완료")
-                
+                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Diffusion 학습 완료"))                
         except Exception as e:
             self.show_error_dialog("Diffusion 학습 실패")
-            self.append_to_console(f"[에러] 학습 실패: {e}")
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"[에러] 학습 실패: {e}"))                
         finally:
             self.thread_train = None
             # 다른 영역 재활성화
@@ -399,12 +403,12 @@ class WindowClass(QMainWindow, form_class):
             return
         self.config["sample_params"]["defect_gen"] = self.combo_defects.currentText()
 
-
-        self.append_to_console("이미지 생성 시작")
+        QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"이미지 생성 시작"))
         try:
             infer(self.config, self.is_genImg_stopped)
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"이미지 생성 완료"))
         except Exception as e:
-            self.append_to_console("이미지 생성 시작 - Fail: ")
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"이미지 생성 - Fail"))
             self.show_error_dialog(f"이미지 생성 - Fail: {e}")
         finally:
             # 다른 영역 재활성화
@@ -503,11 +507,11 @@ class WindowClass(QMainWindow, form_class):
 
 
             # 데이터 검사
-            self.append_to_console("이미지 폴더 검사 시작...")
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"이미지 폴더 검사 시작..."))
             if not self.checkImgPath():
                 QMetaObject.invokeMethod(self.text_imgPathStatus, "setText", Q_ARG(str, "Fail"))
                 QMetaObject.invokeMethod(self.text_imgPathStatus, "setStyleSheet", Q_ARG(str, "color: red"))
-                self.append_to_console("이미지 폴더 검사 - Fail")
+                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"이미지 폴더 검사 - Fail"))
                 return
 
 
@@ -515,7 +519,7 @@ class WindowClass(QMainWindow, form_class):
             # ok 표시
             QMetaObject.invokeMethod(self.text_imgPathStatus, "setText", Q_ARG(str, "OK"))
             QMetaObject.invokeMethod(self.text_imgPathStatus, "setStyleSheet", Q_ARG(str, "color: green"))
-            self.append_to_console("이미지 폴더 검사 - OK")
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"이미지 폴더 검사 - OK"))
             
             # ProgressBar 비활성화
             QMetaObject.invokeMethod(self.progressBar_dataset, "setEnabled", Q_ARG(bool, False))
@@ -536,7 +540,14 @@ class WindowClass(QMainWindow, form_class):
 
     def update_defect_combobox(self, defects):
         """ QComboBox에 불량명 리스트를 추가 """
+        defects.sort()
+        self.combo_defects.clear()
         self.combo_defects.addItems(defects)
+
+        # 특정 항목을 제거하고 싶을 경우:
+        index = self.combo_defects.findText("defect_name")  # "defect_name" 항목의 인덱스를 찾음
+        if index != -1:  # 항목이 존재할 경우
+            self.combo_defects.removeItem(index)
 
 
     def get_defects(self):
@@ -585,7 +596,7 @@ class WindowClass(QMainWindow, form_class):
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
                 # ','로 split 후 세 번째 항목을 가져옴
-                content_split = content.split(',')
+                content_split = content.replace("(", "").replace(")", "").split(',')
                 x = int(content_split[0])
                 y = int(content_split[1])
                 label = content_split[2].strip()

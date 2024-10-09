@@ -69,10 +69,12 @@ def sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
     with torch.no_grad():   # 이게 없으면 VRAM 사용량 폭증
         for i in tqdm(reversed(range(diffusion_config['num_timesteps']))):
             if stop_flag():  # stop_flag가 True이면 학습 중단
+                release_cuda(model, vae, text_tokenizer, text_model)
                 return
 
             # Get prediction of noise
-            t = (torch.ones((xt.shape[0],)) * i).long().to(device)
+            #t = (torch.ones((xt.shape[0],)) * i).long().to(device)
+            t = torch.full((xt.shape[0],), i, dtype=torch.long, device=device)
             noise_pred_cond = model(xt, t, cond_input)
             
             # CFG 자유도 없앤다 (neg prompt 관여 안한다)
@@ -83,7 +85,7 @@ def sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
             noise_pred = noise_pred_cond
             
             # Use scheduler to get x0 and xt-1
-            xt, x0_pred = scheduler.sample_prev_timestep(xt, noise_pred, torch.as_tensor(i).to(device))
+            xt, x0_pred = scheduler.sample_prev_timestep(xt, noise_pred, t)
             
             # Save x0
             # ims = torch.clamp(xt, -1., 1.).detach().cpu()
@@ -217,6 +219,7 @@ def infer(config, stop_flag):
     # ****** 학습 중지 플래그 확인 ******
     if stop_flag():  # stop_flag가 True이면 학습 중단
         print("이미지 생성 중지 요청됨. 종료합니다.")
+        release_cuda(None, None, text_tokenizer, text_model)
         return
 
     ########## Load Unet #############
@@ -255,8 +258,8 @@ def infer(config, stop_flag):
                                                                           train_config['vqvae_autoencoder_ckpt_name'])))
     #####################################
     
-    with torch.no_grad():
-        dict_list_str_coord_jitter = {}
+    #with torch.no_grad():
+    dict_list_str_coord_jitter = {}
 
 
     #for defect_gen in list_defect_gen:
@@ -289,6 +292,7 @@ def infer(config, stop_flag):
         # ****** 학습 중지 플래그 확인 ******
         if stop_flag():  # stop_flag가 True이면 학습 중단
             print("이미지 생성 중지 요청됨. 종료합니다.")
+            release_cuda(model, vae, text_tokenizer, text_model)
             return
 
         # for defect_gen in list_defect_gen:
@@ -307,6 +311,34 @@ def infer(config, stop_flag):
                 #vae, text_tokenizer, text_model, j, defect_gen, fname_pth.replace(".pth", ""), str_pick_coord)
                 #vae, text_tokenizer, text_model, j, defect_gen, str_pick_coord) 
                 vae, text_tokenizer, text_model, path_img, stop_flag)
+        
+    # sampling 끝나면 release
+    release_cuda(model, vae, text_tokenizer, text_model)
+
+
+
+def release_cuda(model, vae, text_tokenizer, text_model):
+    """
+    Efficiently releases GPU memory by sending models to CPU and clearing cache
+    """
+    if model is not None:
+        model.to('cpu')
+        del model
+
+    if vae is not None:
+        vae.to('cpu')
+        del vae
+
+    if text_model is not None:
+        text_model.to('cpu')
+        del text_model
+
+    if text_tokenizer is not None:
+        del text_tokenizer
+
+    torch.cuda.empty_cache()
+
+    return
 
 
 if __name__ == '__main__':
