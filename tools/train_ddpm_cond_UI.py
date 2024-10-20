@@ -1,6 +1,6 @@
 import os, sys
 import shutil
-# import yaml
+import yaml
 # import argparse
 import numpy as np
 from tqdm import tqdm
@@ -62,16 +62,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # logger.addHandler(file_handler)
 # logger.info("start")
 
-def train(config, stop_flag, progress_callback=None):
-    # Read the config file
-    # with open(args.config_path, 'r') as file:
-    # with open(r"G:\project\genAI\stable_diffusion_from_scratch\StableDiffusion-PyTorch\config\Asdf_text_cond_myclass.yaml", 'r') as file:
-    #     try:
-    #         config = yaml.safe_load(file)
-    #     except yaml.YAMLError as exc:
-    #         print(exc)
-    # print(config)
-    ########################
+def train(config, stop_flag=None, progress_callback=None):
     
     diffusion_config = config['diffusion_params']
     dataset_config = config['dataset_params']
@@ -439,4 +430,24 @@ if __name__ == '__main__':
     #                     default='config/celebhq_text_cond_clip.yaml', type=str)
     # args = parser.parse_args()
     # train(args)
-    train()
+
+    # Read the config file
+    # with open(args.config_path, 'r') as file:
+    with open(r"G:\project\genAI\stable_diffusion_from_scratch\StableDiffusion-PyTorch\config\Asdf_text_cond_coord_ui.yaml", 'r') as file:
+        try:
+            config = yaml.safe_load(file)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+    config["sample_params"]["jitter_std"] = 10
+    config["train_params"]["ldm_epochs"] = 20
+    config["train_params"]["autoencoder_epochs"] = 30
+    config["train_params"]["task_name"] = 'Asdf'
+    config["diffusion_params"]["num_timesteps"] = 1000
+    config["dataset_params"]["im_path"] = r'C:\Users\JWKim\Downloads\generic_data'
+    config["dataset_params"]["im_size"] = 128
+
+    print(config)
+    ########################
+
+    train(config=config)
