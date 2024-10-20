@@ -1,15 +1,36 @@
-import sys
-sys.path.append(r"")
+import os, sys
 import shutil
-import yaml
-import argparse
+# import yaml
+# import argparse
 import numpy as np
 from tqdm import tqdm
 from torch.optim import Adam
-from dataset.Asdf_dataset_coord import AsdfDataset
 from torch.utils.data import DataLoader
-import torchvision
-from torchvision.utils import make_grid
+# import torchvision
+# from torchvision.utils import make_grid
+
+##### 모듈을 가져오기 위한 세팅 #####
+# PyInstaller로 패키징된 경우 임시 폴더 경로를 추가
+if hasattr(sys, '_MEIPASS'):
+    try:
+        sys.path.append(os.path.join(sys._MEIPASS, 'models'))
+        sys.path.append(os.path.join(sys._MEIPASS, 'scheduler'))
+        sys.path.append(os.path.join(sys._MEIPASS, 'utils'))
+        sys.path.append(os.path.join(sys._MEIPASS, 'dataset'))
+        print("sys._MEIPASS (tran_ddpm): ", sys._MEIPASS)
+    except Exception as e:
+        print(f"train_ddpm_text_cond_UI.py - An error occurred while setting the working directory: {e}")
+        os.chdir(os.getcwd())
+
+    # 실제 파일 시스템 경로
+    dir_root = os.getcwd()
+
+# 개발 환경에서의 일반적인 경로 설정
+else:
+    dir_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.append(os.path.join(dir_root))
+#############################################
+from dataset.Asdf_dataset_coord import AsdfDataset
 from models.unet_cond_base_coord import Unet
 from models.vqvae import VQVAE
 from scheduler.linear_noise_scheduler import LinearNoiseScheduler
@@ -17,11 +38,12 @@ from tools.sample_ddpm_text_cond_UI import sample
 from utils.text_utils import *
 from utils.config_utils import *
 from utils.diffusion_utils import *
-import pathlib
-import logging
+# import pathlib
+# import logging
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-path_current_file = os.path.realpath(__file__)
+
+# path_current_file = os.path.realpath(__file__)
 
 # # logger 세팅
 # logger = logging.getLogger()
@@ -40,7 +62,7 @@ path_current_file = os.path.realpath(__file__)
 # logger.addHandler(file_handler)
 # logger.info("start")
 
-def train(config, stop_flag):
+def train(config, stop_flag, progress_callback=None):
     # Read the config file
     # with open(args.config_path, 'r') as file:
     # with open(r"G:\project\genAI\stable_diffusion_from_scratch\StableDiffusion-PyTorch\config\Asdf_text_cond_myclass.yaml", 'r') as file:
@@ -56,6 +78,7 @@ def train(config, stop_flag):
     diffusion_model_config = config['ldm_params']
     autoencoder_model_config = config['autoencoder_params']
     train_config = config['train_params']
+    sample_config = config['sample_params']
     continue_training = train_config['continue_training']
     continue_epoch = train_config['continue_epoch']
 
@@ -247,42 +270,132 @@ def train(config, stop_flag):
             np.mean(losses)))
         torch.save(model.state_dict(), path_ddpm_ckpt)
 
-        if epoch_idx % train_config['save_img_every_epoch'] == 0:
-            print(f"[INFO] sampling an img at epoch={epoch_idx + 1}")
+        # #### 일정 epoch마다 이미지 샘플링 해서 확인
+        # if epoch_idx % train_config['save_img_every_epoch'] == 0:
+        #     print(f"[INFO] sampling an img at epoch={epoch_idx + 1}")
 
-            # 모델 파일 저장
-            shutil.copyfile(path_ddpm_ckpt, os.path.join(train_config['task_name'], f"{epoch_idx}.pth"))
+        #     # 모델 파일 저장
+        #     shutil.copyfile(path_ddpm_ckpt, os.path.join(train_config['task_name'], f"{epoch_idx}.pth"))
 
-            model.eval()
-            with torch.no_grad():
+        #     model.eval()
+        #     with torch.no_grad():
 
-                # 생성 이미지 save경로 설정
-                dir_gen_img = os.path.join(train_config['task_name'], 'cond_text_samples')
-                if not os.path.exists(dir_gen_img):
-                    os.mkdir(dir_gen_img)
+        #         # 생성 이미지 save경로 설정
+        #         dir_gen_img = os.path.join(train_config['task_name'], 'cond_text_samples')
+        #         if not os.path.exists(dir_gen_img):
+        #             os.mkdir(dir_gen_img)
                 
-                # 첫번째 불량
-                text_prompt = ['(422, 279), defect_a']
-                path_img = os.path.join(dir_gen_img, f'{text_prompt[0]}_ep_{epoch_idx}.bmp')
-                print("path_img: ", path_img)
-                print(f"[INFO] Sampling... {text_prompt[0]}")
-                sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
-                       autoencoder_model_config, diffusion_config, dataset_config,
-                       vae, text_tokenizer, text_model, path_img, stop_flag)
                 
-                # 같은 위치 두번째 불량
-                text_prompt = ['(422, 279), defect_b']
-                path_img = os.path.join(dir_gen_img, f'{text_prompt[0]}_ep_{epoch_idx}.bmp')
+        #         for iii in range(sample_config["num_gen_img"]):
+        #             print(f"sampleing cycle: {iii} -------------------- ")
 
-                print(f"[INFO] Sampling... {text_prompt[0]}")
-                sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
-                       autoencoder_model_config, diffusion_config, dataset_config,
-                       vae, text_tokenizer, text_model, path_img, stop_flag)
+        #             # 첫번째 불량
+        #             text_prompt = ['(33, 409), first1st']
+        #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
+        #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
+        #             print("path_img: ", path_img)
+        #             print(f"[INFO] Sampling... {text_prompt[0]}")
+        #             sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
+        #                 autoencoder_model_config, diffusion_config, dataset_config,
+        #                 vae, text_tokenizer, text_model, path_img, stop_flag)
+                    
+        #             # 2
+        #             text_prompt = ['(29, 455), first1st']
+        #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
+        #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
+        #             print("path_img: ", path_img)
+        #             print(f"[INFO] Sampling... {text_prompt[0]}")
+        #             sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
+        #                 autoencoder_model_config, diffusion_config, dataset_config,
+        #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
-            model.train()
+
+        #             # 3
+        #             text_prompt = ['(160, 442), first1st']
+        #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
+        #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
+        #             print("path_img: ", path_img)
+        #             print(f"[INFO] Sampling... {text_prompt[0]}")
+        #             sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
+        #                 autoencoder_model_config, diffusion_config, dataset_config,
+        #                 vae, text_tokenizer, text_model, path_img, stop_flag)
+
+        #             # 4
+        #             text_prompt = ['(284, 506), first1st']
+        #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
+        #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
+        #             print("path_img: ", path_img)
+        #             print(f"[INFO] Sampling... {text_prompt[0]}")
+        #             sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
+        #                 autoencoder_model_config, diffusion_config, dataset_config,
+        #                 vae, text_tokenizer, text_model, path_img, stop_flag)
+
+        #             # 5
+        #             text_prompt = ['(579, 269), second2nd']
+        #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
+        #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
+        #             print("path_img: ", path_img)
+        #             print(f"[INFO] Sampling... {text_prompt[0]}")
+        #             sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
+        #                 autoencoder_model_config, diffusion_config, dataset_config,
+        #                 vae, text_tokenizer, text_model, path_img, stop_flag)
+
+        #             # 6
+        #             text_prompt = ['(114, 564), third3rd']
+        #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
+        #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
+        #             print("path_img: ", path_img)
+        #             print(f"[INFO] Sampling... {text_prompt[0]}")
+        #             sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
+        #                 autoencoder_model_config, diffusion_config, dataset_config,
+        #                 vae, text_tokenizer, text_model, path_img, stop_flag)
+
+        #             # 7
+        #             text_prompt = ['(514, 567), fourth4th']
+        #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
+        #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
+        #             print("path_img: ", path_img)
+        #             print(f"[INFO] Sampling... {text_prompt[0]}")
+        #             sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
+        #                 autoencoder_model_config, diffusion_config, dataset_config,
+        #                 vae, text_tokenizer, text_model, path_img, stop_flag)
+
+        #             # 8
+        #             text_prompt = ['(641, 895), fourth4th']
+        #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
+        #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
+        #             print("path_img: ", path_img)
+        #             print(f"[INFO] Sampling... {text_prompt[0]}")
+        #             sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
+        #                 autoencoder_model_config, diffusion_config, dataset_config,
+        #                 vae, text_tokenizer, text_model, path_img, stop_flag)
+
+        #             # 9
+        #             text_prompt = ['(844, 801), fourth4th']
+        #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
+        #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
+        #             print("path_img: ", path_img)
+        #             print(f"[INFO] Sampling... {text_prompt[0]}")
+        #             sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
+        #                 autoencoder_model_config, diffusion_config, dataset_config,
+        #                 vae, text_tokenizer, text_model, path_img, stop_flag)
+
+        #             # 10
+        #             text_prompt = ['(520, 708), fourth4th']
+        #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
+        #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
+        #             print("path_img: ", path_img)
+        #             print(f"[INFO] Sampling... {text_prompt[0]}")
+        #             sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
+        #                 autoencoder_model_config, diffusion_config, dataset_config,
+        #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
 
+        #     model.train() # train 모드로 되돌리기
 
+        # progress bar 업데이트
+        if progress_callback:
+            progress_callback(epoch_idx + 1)
     
     print('Done Training ...')
 

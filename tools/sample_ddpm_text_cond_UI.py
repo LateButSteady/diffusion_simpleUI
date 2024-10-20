@@ -1,16 +1,36 @@
-import sys
-sys.path.append(r"G:\project\genAI\stable_diffusion_from_scratch\StableDiffusion-PyTorch")
+import os, sys
 import numpy as np
-import pandas as pd
+# import pandas as pd
 import torchvision
-import argparse
-import yaml
+# import argparse
+# import yaml
 import os
 from torchvision.utils import make_grid
 from tqdm import tqdm
 import logging
 import random
+import time
 
+##### 모듈을 가져오기 위한 세팅 #####
+# PyInstaller로 패키징된 경우 임시 폴더 경로를 추가
+if hasattr(sys, '_MEIPASS'):
+    try:
+        sys.path.append(os.path.join(sys._MEIPASS, 'models'))
+        sys.path.append(os.path.join(sys._MEIPASS, 'scheduler'))
+        sys.path.append(os.path.join(sys._MEIPASS, 'utils'))
+        print("sys._MEIPASS (sample): ", sys._MEIPASS)
+    except Exception as e:
+        print(f"[WARN] sample_ddpm_text_cond_UI.py - An error occurred while setting the working directory: {e}")
+        os.chdir(os.getcwd())
+
+    # 실제 파일 시스템 경로
+    dir_root = os.getcwd()
+
+# 개발 환경에서의 일반적인 경로 설정
+else:
+    dir_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.append(os.path.join(dir_root))
+#############################################
 from models.unet_cond_base_coord import Unet
 from models.vqvae import VQVAE
 from scheduler.linear_noise_scheduler import LinearNoiseScheduler
@@ -102,7 +122,7 @@ def sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
     
     # if not os.path.exists(os.path.join(train_config['task_name'], 'cond_text_samples')):
     #     os.mkdir(os.path.join(train_config['task_name'], 'cond_text_samples'))
-    # dir_gen_img = os.path.join(train-config['task_name'], 'cond_text_samples', defect_name)
+    # dir_gen_img = os.path.join(train_config['task_name'], 'cond_text_samples', defect_name)
     # if not os.path.exists(dir_gen_img):
     #     os.mkdir(dir_gen_img)
     # img.save(os.path.join(train_config['task_name'], 'cond_text_samples', 'x0_{}.png'.format(i)))
@@ -111,7 +131,7 @@ def sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
     ##############################################################
     img.save(path_img)
     img.close()
-
+    del img
 
 
 def gaussian_randint(std, n, return_type="np"):
@@ -130,31 +150,7 @@ def gaussian_randint(std, n, return_type="np"):
     return randomInts
 
 
-
-def remove_neg(arr_noisy, arr_org, std, n=1):
-    """
-    np_x에 random noise를 더한 결과 값이 (-)가 있다면 제거
-    """
-    max_iter = 100
-    cnt = 0
-
-    while any(arr_noisy < 0):
-        cnt += 1
-
-        # max_iter 넘으면 break
-        if cnt >= max_iter:
-            print(f"[WARN] remove_neg - iter exceeded max_iter.")
-
-        np_ind_neg = np.where(arr_noisy < 0)[0]
-        for ind_neg in np_ind_neg:
-            arr_noisy[ind_neg] = arr_org[ind_neg] + np.array(gaussian_randint(std=std, n=n, return_type="list"))[0]
-
-    return arr_noisy
-
-
-
-
-def infer(config, stop_flag):
+def infer(config, stop_flag=None, progress_callback=None):
 # def infer(args):
     # Read the config file #
     # with open(args.config_path, 'r') as file:
@@ -188,6 +184,15 @@ def infer(config, stop_flag):
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
+
+    # 폴더 준비
+    if not os.path.exists(os.path.join(train_config['task_name'], 'cond_text_samples')):
+        print("Creating directory for sampled images")
+        os.mkdir(os.path.join(train_config['task_name'], 'cond_text_samples'))
+    dir_gen_img = os.path.join(train_config['task_name'], 'cond_text_samples', sample_config["defect_gen"])
+    if not os.path.exists(dir_gen_img):
+        print(f"Creating directory \"{sample_config['defect_gen']}\"")
+        os.mkdir(dir_gen_img)
 
     ########## Create the noise scheduler #############
     scheduler = LinearNoiseScheduler(num_timesteps=diffusion_config['num_timesteps'],
@@ -233,7 +238,7 @@ def infer(config, stop_flag):
                                                       train_config['ldm_ckpt_name']),
                                                       map_location=device))
     else:
-        raise Exception('Model checkpoint {} not found'.format(os.path.join(train_config['task_name'],
+        raise Exception('Model checkpoint "{}" not found'.format(os.path.join(train_config['task_name'],
                                                               train_config['ldm_ckpt_name'])))
     #####################################
     
@@ -264,29 +269,81 @@ def infer(config, stop_flag):
 
     #for defect_gen in list_defect_gen:
     ########## sampling loop ###########
-    # 각 불량별로 좌표 랜덤으로 뽑기
+    ##### sampling 좌표 정하기
+    # 랜덤 체크라면, 좌표 랜덤으로 뽑기
+    # 1. 먼저 caption에서 좌표 최대, 최소 구하기
+    # 2. 최대, 최소 안에서 이미지 생성 개수만큼 random 좌표 찍기
+    if sample_config["random_coord"]:
+        print("[INFO] Picking random coord")
+        coords = np.array(dataset_config["caption_coords"])
+        # 1. 
+        x_min = np.min(coords[:, 0], axis=0)
+        x_max = np.max(coords[:, 0], axis=0)
+        y_min = np.min(coords[:, 1], axis=0)
+        y_max = np.max(coords[:, 1], axis=0)
+        print(f"x_min, x_max, y_min, y_max = {x_min} {x_max} {y_min} {y_max}")
+        # 2. 
+        # 랜덤 좌표의 seed는 fix하지 않는걸로
+        current_time_ms = int(time.time() * 1000)
+        # 밀리초의 마지막 4자리를 추출
+        last_4_digits = current_time_ms % 10000
+        random.seed(last_4_digits)
+        print("Seed changed: ", last_4_digits)
+
+        np_pick_x = random.choices(x_min + np.array(range(x_max - x_min)), k=num_gen_img)
+        np_pick_y = random.choices(y_min + np.array(range(y_max - y_min)), k=num_gen_img)
+        np_pick_xy = np.column_stack([np_pick_x, np_pick_y])
+        print("Completed random pick")
+        # seed 다시 복귀
+        random.seed(train_config['seed'])
+        print("Seed returned: ", last_4_digits)
+        # print(np_pick_xy)
+    # 랜덤 체크 아니라면
+    # 1-1. 만약 jitter == 0이라면 text prompt 대로 sample() 시작
+    # 1-2. 만약 jitter != 0이라면 생성 개수만큼 좌표 흔들기
+    else:
+        # 1-1.
+        np_pick_xy = np.array([[sample_config["gen_coord"][0], sample_config["gen_coord"][1]]] * sample_config["num_gen_img"])
+        # 1-2. 
+        if jitter_std != 0:
+            print(f"[INFO] Jittering the enterred coord ({sample_config['gen_coord'][0]}, {sample_config['gen_coord'][1]}) with std {jitter_std}")
+            np_x_jitter = np_pick_xy[:, 0] + np.array(gaussian_randint(std=jitter_std, n=num_gen_img, return_type="list"))
+            np_y_jitter = np_pick_xy[:, 1] + np.array(gaussian_randint(std=jitter_std, n=num_gen_img, return_type="list"))
+
+            # 음수는 다시 0 이상으로 나올때까지 재시도
+            cnt = 0
+            while any(np_x_jitter < 0):
+                if cnt < 10 :
+                    print(f"[INFO] Negative value x coord ind found after adding noise. Retrying jittering")
+                    # np_x_jitter = remove_neg(arr_noisy=np_x_jitter, arr_org=np_pick_xy[:, 0], std=jitter_std, n=1)
+                    # loc 중심으로 std만큼 벌어진 값으로 size개만큼 뽑는다
+                    np_x_jitter = np.random.normal(loc=np_pick_xy[:, 0], scale=jitter_std, size=np_pick_xy[:, 0].shape[0])
+                    np_x_jitter = np.round(np_x_jitter).astype('int')
+                    cnt += 1
+                else:
+                    raise ValueError("랜덤 좌표 생성에 실패했습니다.")
+
+            cnt = 0
+            while any(np_y_jitter < 0):
+                if cnt < 10 :
+                    print(f"[INFO] Negative value y coord ind found after adding noise. Retrying jittering")
+                    np_y_jitter = np.random.normal(loc=np_pick_xy[:, 1], scale=jitter_std, size=np_pick_xy[:, 1].shape[0])
+                    np_y_jitter = np.round(np_y_jitter).astype('int')
+                    cnt += 1
+                else:
+                    raise ValueError("랜덤 좌표 생성에 실패했습니다.")
+            
+            np_pick_xy = np.column_stack((np_x_jitter, np_y_jitter))
+        else:
+            print(f"No jittering from the enterred coord ({sample_config['gen_coord'][0]}, {sample_config['gen_coord'][1]})")
+
+    # 2. text prompt 만들어서 dict_list_str_coord_jitter[defect_gen]에 생성 개수만큼 추가
+    dict_list_str_coord_jitter[defect_gen] = [f"({np_pick_xy[i, 0]}, {np_pick_xy[i, 1]})" for i in range(num_gen_img)]
+
+
     #df_coord = pd.read_csv(path_csv_fname_offset_class)    header = ['fname', 'class', 'x', 'y']
-    df_coord = pd.DataFrame(data={'class': [defect_gen], 'x': [sample_config["gen_coord"][0]], 'y': [sample_config["gen_coord"][1]]})
-    df_coord_filter_defect_name = df_coord[df_coord['class'] == defect_gen].reset_index()
-    list_pick_ind = [random.randint(0, len(df_coord_filter_defect_name) - 1) for _ in range(num_gen_img)]
+    #df_coord = pd.DataFrame(data={'class': [defect_gen], 'x': [sample_config["gen_coord"][0]], 'y': [sample_config["gen_coord"][1]]})
 
-    # 랜덤으로 뽑은 좌표를 흔들기
-    if jitter_coord:
-        # 뽑힌 좌표에 random noise 더하기
-        np_x, np_y = np.array(df_coord_filter_defect_name['x'][list_pick_ind]), np.array(df_coord_filter_defect_name['y'][list_pick_ind])
-        np_x_jitter = np_x + np.array(gaussian_randint(std=jitter_std, n=num_gen_img, return_type="list"))
-        np_y_jitter = np_y + np.array(gaussian_randint(std=jitter_std, n=num_gen_img, return_type="list"))
-
-        # 음수는 다시 0 이상으로 나올때까지 재시도
-        if any(np_x_jitter < 0):
-            print(f"[INFO] Negative value x coord ind found after adding noise. Retrying jittering")
-            np_x_jitter = remove_neg(arr_noisy=np_x_jitter, arr_org=np_x, std=jitter_std, n=1)
-        if any(np_y_jitter < 0):
-            print(f"[INFO] Negative value y coord ind found after adding noise. Retrying jittering")
-            np_y_jitter = remove_neg(arr_noisy=np_y_jitter, arr_org=np_y, std=jitter_std, n=1)
-
-        # 불량별로 뽑은 좌표 저장
-        dict_list_str_coord_jitter[defect_gen] = [f"({np_x_jitter[i]}, {np_y_jitter[i]})" for i in range(num_gen_img)] # string으로 바꿔서 concat하기
 
     for j in range(num_gen_img):
         # ****** 학습 중지 플래그 확인 ******
@@ -303,7 +360,7 @@ def infer(config, stop_flag):
         dir_gen_img = os.path.join(train_config['task_name'], 'cond_text_samples', defect_gen)
         if not os.path.exists(dir_gen_img):
             os.mkdir(dir_gen_img)
-        path_img = os.path.join(dir_gen_img, f'x[{j}]_{text_prompt[0]}.bmp')
+        path_img = os.path.join(dir_gen_img, f'x[{j}]_({np_pick_xy[j, 0]}_{np_pick_xy[j, 1]})_{defect_gen}.bmp')
 
         print(f"[INFO] Sampling... {j+1} / {num_gen_img} // {text_prompt[0]} // {train_config['ldm_ckpt_name']}")
         sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
@@ -312,6 +369,10 @@ def infer(config, stop_flag):
                 #vae, text_tokenizer, text_model, j, defect_gen, str_pick_coord) 
                 vae, text_tokenizer, text_model, path_img, stop_flag)
         
+        # progress bar 업데이트
+        if progress_callback:
+            progress_callback(j + 1)
+
     # sampling 끝나면 release
     release_cuda(model, vae, text_tokenizer, text_model)
 
@@ -342,8 +403,15 @@ def release_cuda(model, vae, text_tokenizer, text_model):
 
 
 if __name__ == '__main__':
-    
+    import yaml
+    # Read the config file #
+    with open(r"G:\project\genAI\stable_diffusion_from_scratch\StableDiffusion-PyTorch\config\Asdf_text_cond_coord_UI.yaml", 'r') as file:
+        try:
+            config = yaml.safe_load(file)
+        except yaml.YAMLError as exc:
+            print(f"[ERROR] yaml file load error: {exc}")
+
     try:
-        infer()
+        infer(config)
     except Exception as e:
         logging.critical(f"[ERROR] Unhandled exception: {e}", exc_info=True)

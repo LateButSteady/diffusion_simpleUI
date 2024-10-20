@@ -1,19 +1,37 @@
-import yaml
+import os, sys
+# import yaml
 import argparse
-import torch
 import random
-import torchvision
-import os
 import numpy as np
 from tqdm import tqdm
-from models.vqvae import VQVAE
-from models.lpips import LPIPS
-from models.discriminator import Discriminator
+import torch, torchvision
 from torch.utils.data.dataloader import DataLoader
-from dataset.Asdf_dataset import AsdfDataset
 from torch.optim import Adam
 from torchvision.utils import make_grid
 
+##### 모듈을 가져오기 위한 세팅 #####
+# PyInstaller로 패키징된 경우 임시 폴더 경로를 추가
+if hasattr(sys, '_MEIPASS'):
+    try:
+        sys.path.append(os.path.join(sys._MEIPASS, 'models'))
+        sys.path.append(os.path.join(sys._MEIPASS, 'dataset'))
+        print("sys._MEIPASS (train_vqvae): ", sys._MEIPASS)
+    except Exception as e:
+        print(f"train_vqvae_UI.py - An error occurred while setting the working directory: {e}")
+        os.chdir(os.getcwd())
+
+    # 실제 파일 시스템 경로
+    dir_root = os.getcwd()
+
+# 개발 환경에서의 일반적인 경로 설정
+else:
+    dir_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.append(os.path.join(dir_root))
+#############################################
+from models.vqvae import VQVAE
+from models.lpips import LPIPS
+from models.discriminator import Discriminator
+from dataset.Asdf_dataset_coord import AsdfDataset
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -26,7 +44,7 @@ def train(config, stop_flag, progress_callback=None):
     #     except yaml.YAMLError as exc:
     #         print(exc)
     # print(config)
-    
+
     dataset_config = config['dataset_params']
     autoencoder_config = config['autoencoder_params']
     train_config = config['train_params']
@@ -39,10 +57,17 @@ def train(config, stop_flag, progress_callback=None):
     if device == 'cuda':
         torch.cuda.manual_seed_all(seed)
     #############################
-    
-    # Create the model and dataset #
+    print("2")
+    ##### 여기서 아래 경고 발생
+    # QBasicTimer::start: Timers cannot be started from another thread
+    # QObject::connect: Cannot queue arguments of type 'QItemSelection'
+    # (Make sure 'QItemSelection' is registered using qRegisterMetaType().)
+
+    # Create the model and dataset
     model = VQVAE(im_channels=dataset_config['im_channels'],
                   model_config=autoencoder_config).to(device)
+    print("222")
+
     # Create the dataset
     im_dataset_cls = {
         'Asdf': AsdfDataset,
@@ -84,8 +109,32 @@ def train(config, stop_flag, progress_callback=None):
     acc_steps = train_config['autoencoder_acc_steps']
     image_save_steps = train_config['autoencoder_img_save_steps']
     img_save_count = 0
+
+    # 중간 학습 재개를 위한 가중치 로드 코드
+    continue_training = train_config['continue_training_vae']
+    continue_epoch = train_config['continue_epoch_vae']
     
-    for epoch_idx in range(num_epochs):
+    if continue_training:
+        print(f'VAE training - continue_epoch is enabled')
+        vqvae_ckpt_path = os.path.join(train_config['task_name'], train_config['vqvae_autoencoder_ckpt_name'])
+        discriminator_ckpt_path = os.path.join(train_config['task_name'], train_config['vqvae_discriminator_ckpt_name'])
+        if os.path.exists(vqvae_ckpt_path) and os.path.exists(discriminator_ckpt_path):
+            print("Loading existing model and discriminator checkpoints")
+            model.load_state_dict(torch.load(vqvae_ckpt_path, map_location=device))
+            discriminator.load_state_dict(torch.load(discriminator_ckpt_path, map_location=device))
+            start_epoch = continue_epoch
+        else:
+            print(f"Checkpoint not found. Starting from scratch.")
+            start_epoch = 0
+    else:
+        start_epoch = 0
+
+    print(f'VAE training - start epoch: {start_epoch}')
+
+    model.train()
+
+
+    for epoch_idx in range(start_epoch-1, num_epochs):
         recon_losses = []
         codebook_losses = []
         #commitment_losses = []
@@ -174,11 +223,11 @@ def train(config, stop_flag, progress_callback=None):
                 print("학습 중지 요청됨. 학습을 종료합니다.")
                 release_cuda(model=model, 
                              lpips_model=lpips_model, 
-                             discriminator=discriminator,
-                             optimizer_d=optimizer_d,
+                             discriminator=discriminator, 
+                             optimizer_d=optimizer_d, 
                              optimizer_g=optimizer_g)
                 return
-            
+        print("6")
         optimizer_d.step()
         optimizer_d.zero_grad()
         optimizer_g.step()
