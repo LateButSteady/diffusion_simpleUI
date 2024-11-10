@@ -66,7 +66,7 @@ def resource_path(relative_path):
 # 경로 설정
 path_icon       = resource_path(os.path.join("UI", "icon.png"))
 path_ui         = resource_path(os.path.join("UI", "sd_ui.ui"))
-path_help_md    = resource_path(os.path.join("UI", "sd_ui_help.md"))
+path_help_md    = resource_path(os.path.join("UI", "sd_ui_help_kor.md"))
 path_config     = resource_path(os.path.join("config", "config.yaml"))
 
 
@@ -114,6 +114,7 @@ class WindowClass(QMainWindow, form_class):
 
         # 언어 전환 버튼 기능 연결
         self.btn_toggleLanguage.clicked.connect(self.toggleLanguage)
+        self.language = "Kor"
 
         # data 관련
         self.defects = []
@@ -813,6 +814,11 @@ class WindowClass(QMainWindow, form_class):
     ########### Help 기능 실행 ############
     def click_help(self):
         try:
+            if self.language == "Kor":
+                path_help_md = resource_path(os.path.join("UI", "sd_ui_help_kor.md"))
+            elif self.language == "Eng":
+                path_help_md = resource_path(os.path.join("UI", "sd_ui_help_eng.md"))
+                
             # help.md 파일 읽기
             with open(path_help_md, 'r', encoding='utf-8') as f:
                 md_content = f.read()
@@ -867,6 +873,9 @@ class WindowClass(QMainWindow, form_class):
     def toggleLanguage(self):
         # 현재 텍스트 상태를 확인
         if self.btn_toggleLanguage.text() == "English":
+            # 현재 언어 변경
+            self.language = "Eng"
+
             # 영어로 변경
             self.btn_toggleLanguage.setText("Korean")
             self.btn_checkImgPath.setText("Check Data")
@@ -899,6 +908,9 @@ class WindowClass(QMainWindow, form_class):
             self.checkBox_randomCoord.setText("Random")
 
         else:
+            # 현재 언어 변경
+            self.language = "Kor"
+
             # 한국어로 복원
             self.btn_toggleLanguage.setText("English")
             self.btn_checkImgPath.setText("데이터 체크")
