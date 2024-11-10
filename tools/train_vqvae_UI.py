@@ -127,12 +127,15 @@ def train(config, stop_flag, progress_callback=None):
     else:
         start_epoch = 0
 
-    print(f'VAE training - start epoch: {start_epoch}')
+    print(f'VAE training - start epoch: {start_epoch + 1}')
 
     model.train()
 
 
-    for epoch_idx in range(start_epoch, num_epochs + 1):
+    for epoch_idx in range(start_epoch, num_epochs):
+    
+        print(f"epoch = {epoch_idx + 1}")
+
         recon_losses = []
         codebook_losses = []
         #commitment_losses = []
@@ -218,7 +221,7 @@ def train(config, stop_flag, progress_callback=None):
 
             # ****** 학습 중지 플래그 확인 ******
             if stop_flag():  # stop_flag가 True이면 학습 중단
-                print("학습 중지 요청됨. 학습을 종료합니다.")
+                print("Requested to stop training.")
                 release_cuda(model=model, 
                              lpips_model=lpips_model, 
                              discriminator=discriminator, 

@@ -222,7 +222,7 @@ def infer(config, stop_flag=None, progress_callback=None):
 
     # ****** 학습 중지 플래그 확인 ******
     if stop_flag and stop_flag():  # stop_flag가 True이면 학습 중단
-        print("Requested to stop image generation. Terminating.")
+        print("Requested to stop image generation.")
         release_cuda(None, None, text_tokenizer, text_model)
         return
 
@@ -347,7 +347,7 @@ def infer(config, stop_flag=None, progress_callback=None):
     for j in range(num_gen_img):
         # ****** 학습 중지 플래그 확인 ******
         if stop_flag and stop_flag():  # stop_flag가 True이면 학습 중단
-            print("Requested to stop image generation. Terminating.")
+            print("Requested to stop image generation.")
             release_cuda(model, vae, text_tokenizer, text_model)
             return
 

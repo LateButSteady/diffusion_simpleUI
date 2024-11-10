@@ -149,6 +149,8 @@ def train(config, stop_flag=None, progress_callback=None):
     else:
         start_epoch = 0
 
+    print(f'DDPM training - start epoch: {start_epoch + 1}')
+
     model.train()
     
     vae = None
@@ -178,7 +180,7 @@ def train(config, stop_flag=None, progress_callback=None):
             param.requires_grad = False
     
     # Run training
-    for epoch_idx in range(start_epoch, num_epochs + 1):
+    for epoch_idx in range(start_epoch, num_epochs):
         
         print(f"epoch = {epoch_idx + 1}")
         # logger.info(f"epoch = {epoch_idx + 1}")
@@ -249,7 +251,7 @@ def train(config, stop_flag=None, progress_callback=None):
 
             # ****** 학습 중지 플래그 확인 ******
             if stop_flag and stop_flag():  # stop_flag가 True이면 학습 중단
-                print("Requested to stop training. Terminating training.")
+                print("Requested to stop training.")
                 release_cuda(model=model, 
                             optimizer=optimizer, 
                             vae=vae, 

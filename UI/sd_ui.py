@@ -12,6 +12,10 @@ from PyQt5.QtWidgets import QApplication, QWidget, QDialog, QMainWindow, QVBoxLa
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, QMetaObject, Q_ARG, pyqtSlot
 
+# warning suppress: sipPyTypeDict() is deprecated
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 ##### 모듈을 가져오기 위한 세팅 #####
 # PyInstaller로 패키징된 경우 임시 폴더 경로를 추가
 if hasattr(sys, '_MEIPASS'):
@@ -131,12 +135,12 @@ class WindowClass(QMainWindow, form_class):
         self.activateWindow()
 
         # 임시 초기값 설정
-        self.edit_pathImg.setText(r"G:\project\genAI\stable_diffusion_from_scratch\StableDiffusion-PyTorch\generic_data")
-        self.edit_taskName.setText("task1_flower")
-        self.edit_epochVae.setText("50")
-        self.edit_epochDdpm.setText("1")
+        self.edit_pathImg.setText(r"")
+        self.edit_taskName.setText("")
+        self.edit_epochVae.setText("")
+        self.edit_epochDdpm.setText("")
         self.edit_timeStep.setText("1000")
-        self.edit_numGenImg.setText("5")
+        self.edit_numGenImg.setText("")
         self.edit_coordJitterStd.setText("0")
         self.btn_help.setEnabled(True)
 
