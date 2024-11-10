@@ -2,13 +2,13 @@
 #-*- encoding: utf-8 -*-
 
 import os, sys
-import markdown
+import markdown2
 import yaml
 import threading    # 학습을 백그라운드에서 실행하기 위함
 from concurrent.futures import ThreadPoolExecutor
 
 from PyQt5 import uic
-from PyQt5.QtWidgets import QApplication, QWidget, QDialog, QMainWindow, QVBoxLayout, QTextBrowser, QMessageBox
+from PyQt5.QtWidgets import QApplication, QWidget, QDialog, QMainWindow, QVBoxLayout, QTextBrowser, QMessageBox, QTextEdit
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, QMetaObject, Q_ARG, pyqtSlot
 
@@ -57,7 +57,7 @@ def resource_path(relative_path):
     try:
         # PyInstaller로 패키징된 환경에서 실행되는 경우, sys._MEIPASS 경로 사용
         base_path = sys._MEIPASS
-    except AttributeError:
+    except Exception as e:
         # 개발 환경에서는 현재 파일의 절대 경로를 기준으로 리소스 경로 설정
         base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
@@ -99,6 +99,7 @@ class WindowClass(QMainWindow, form_class):
         self.progressBar_vae.setValue(0)
         self.progressBar_ddpm.setValue(0)
         self.progressBar_gen.setValue(0)
+        self.edit_console.setReadOnly(True)
 
         # 오브젝트 동작 연결
         self.btn_help.clicked.connect(self.click_help)
@@ -111,6 +112,9 @@ class WindowClass(QMainWindow, form_class):
         self.btn_stopGenImg.clicked.connect(self.stop_genImg)
         self.checkBox_randomCoord.stateChanged.connect(self.toggle_gen_coord)
 
+        # 언어 전환 버튼 기능 연결
+        self.btn_toggleLanguage.clicked.connect(self.toggleLanguage)
+
         # data 관련
         self.defects = []
         self.coords = []
@@ -118,7 +122,7 @@ class WindowClass(QMainWindow, form_class):
 
     # UI custom 설정
     def initUI(self):
-        self.setWindowTitle('Diffugen')
+        self.setWindowTitle('DiffuGen')
         self.setWindowIcon(QIcon(path_icon))
 
         # 최상단 표시
@@ -126,14 +130,14 @@ class WindowClass(QMainWindow, form_class):
         self.activateWindow()
 
         # 임시 초기값 설정
-        self.edit_pathImg.setText(r"C:\Users\JWKim\Downloads\generic_data")
-        self.edit_taskName.setText("task1")
-        self.edit_epochVae.setText("30")
+        self.edit_pathImg.setText(r"G:\project\genAI\stable_diffusion_from_scratch\StableDiffusion-PyTorch\generic_data")
+        self.edit_taskName.setText("task1_flower")
+        self.edit_epochVae.setText("50")
         self.edit_epochDdpm.setText("1")
         self.edit_timeStep.setText("1000")
         self.edit_numGenImg.setText("5")
         self.edit_coordJitterStd.setText("0")
-        self.btn_help.setEnabled(False)
+        self.btn_help.setEnabled(True)
 
     # UI 업데이트가 메인 스레드에서 안전하게 실행되도록 함
     # thread에서 UI 업데이트 발생하는건 좋지 않음
@@ -193,7 +197,7 @@ class WindowClass(QMainWindow, form_class):
             return False#, msg
         
         # 메인 스레드에서 콤보박스 업데이트 실행
-        self.update_defect_combobox(self.defects)
+        QMetaObject.invokeMethod(self, "update_defect_combobox", Qt.QueuedConnection, Q_ARG(list, self.defects))
         QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "불량명 취합 - OK"))
                 
         # TODO caption에는 있는데, img에는 없는 (vice versa) 불일치 파일 체크
@@ -658,6 +662,7 @@ class WindowClass(QMainWindow, form_class):
             QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"이미지 폴더 검사 - Fail"))
 
 
+    @pyqtSlot(list)
     def update_defect_combobox(self, defects):
         """ QComboBox에 불량명 리스트를 추가 """
         defects.sort()
@@ -814,7 +819,8 @@ class WindowClass(QMainWindow, form_class):
             
             # 새 창에 마크다운 렌더링하여 표시
             self.help_window = HelpWindow(md_content)
-            self.help_window.exec_()
+            self.help_window.show()  # exec_() (모달방식-메인UI 동시 조작 불가) 대신 
+                                     # show() (비모달방식-메인UI 동시 조작 가능) 사용
         
         except Exception as e:
             self.show_error_dialog_thread(msg=f"도움말 불러오기 실패: {e}")
@@ -858,6 +864,72 @@ class WindowClass(QMainWindow, form_class):
 
 
 
+    def toggleLanguage(self):
+        # 현재 텍스트 상태를 확인
+        if self.btn_toggleLanguage.text() == "English":
+            # 영어로 변경
+            self.btn_toggleLanguage.setText("Korean")
+            self.btn_checkImgPath.setText("Check Data")
+            self.btn_trainVae.setText("Train")
+            self.btn_stopTrainVae.setText("Stop")
+            self.btn_trainDdpm.setText("Train")
+            self.btn_stopTrainDdpm.setText("Stop")
+            self.btn_genImg.setText("Generate")
+            self.btn_stopGenImg.setText("Stop")
+            self.btn_help.setText("Help")
+
+            # 그룹박스 영어로 변경
+            self.groupBox_1.setTitle("1. Data Settings")
+            self.groupBox_2.setTitle("2. VAE Training")
+            self.groupBox_3.setTitle("3. Diffusion Training")
+            self.groupBox_4.setTitle("4. Image Generation")
+            self.groupBox_4_1.setTitle("4-1. Embedding Conditions")
+
+            # 라벨 영어로 변경
+            self.label_pathimg.setText("Image Folder Path")
+            self.label_taskName.setText("Output Folder")
+            self.label_dim.setText("Width x Height")
+            self.label_imgPathStatus.setText("Data Check Result:")
+            self.label_defects.setText("Image Type")
+            self.label_numGenImg.setText("No. of Images")
+            self.label_genImgCoord.setText("Coordinates")
+            self.label_coordJitterStd.setText("Jitter\nStrength")
+
+            # 체크박스 영어로 변경
+            self.checkBox_randomCoord.setText("Random")
+
+        else:
+            # 한국어로 복원
+            self.btn_toggleLanguage.setText("English")
+            self.btn_checkImgPath.setText("데이터 체크")
+            self.btn_trainVae.setText("학습")
+            self.btn_stopTrainVae.setText("중지")
+            self.btn_trainDdpm.setText("학습")
+            self.btn_stopTrainDdpm.setText("중지")
+            self.btn_genImg.setText("생성")
+            self.btn_stopGenImg.setText("중지")
+            self.btn_help.setText("도움말")
+
+            # 그룹박스 복원
+            self.groupBox_1.setTitle("1. 데이터 설정")
+            self.groupBox_2.setTitle("2. VAE 학습")
+            self.groupBox_3.setTitle("3. Diffusion 학습")
+            self.groupBox_4.setTitle("4. 이미지 생성")
+            self.groupBox_4_1.setTitle("4-1. 생성 조건 설정 (Embedding)")
+
+            # 라벨 복원
+            self.label_pathimg.setText("이미지 폴더 경로")
+            self.label_taskName.setText("Output 폴더명")
+            self.label_dim.setText("가로 x 세로")
+            self.label_imgPathStatus.setText("체크 결과:")
+            self.label_defects.setText("생성 이미지 종류")
+            self.label_numGenImg.setText("생성 이미지 개수")
+            self.label_genImgCoord.setText("생성 좌표")
+            self.label_coordJitterStd.setText("Jittering 강도")
+
+            # 체크박스 복원
+            self.checkBox_randomCoord.setText("랜덤 좌표")
+
 
 
 
@@ -866,17 +938,18 @@ class HelpWindow(QDialog):
     def __init__(self, md_content):
         super().__init__()
         self.setWindowTitle("Help")
-        self.setGeometry(300, 300, 600, 400)
+        self.setGeometry(300, 300, 800, 400)
 
-        # 마크다운을 표시할 QTextBrowser
+        # # 마크다운을 표시할 QTextBrowser
         layout = QVBoxLayout()
-        self.text_browser = QTextBrowser()
-        layout.addWidget(self.text_browser)
+        self.text_edit = QTextEdit(self)
+        self.text_edit.setReadOnly(True)
+        layout.addWidget(self.text_edit)
         self.setLayout(layout)
         
-        # 마크다운 콘텐츠를 HTML로 변환하여 표시
-        html_content = markdown.markdown(md_content)
-        self.text_browser.setHtml(html_content)
+        # # 마크다운 콘텐츠를 HTML로 변환하여 표시
+        html_content = markdown2.markdown(md_content)
+        self.text_edit.setHtml(html_content)
 
 
 if __name__ == '__main__':

@@ -141,6 +141,9 @@ def train(config, stop_flag=None, progress_callback=None):
     if continue_training:
         if os.path.exists(path_ddpm_ckpt):
             print("Loading existing model checkpoint")
+        else:
+            print(f"[ERROR] Cannot find the DDPM model file {path_ddpm_ckpt}")
+            raise FileNotFoundError 
         model.load_state_dict(torch.load(path_ddpm_ckpt, map_location=device))
         start_epoch = continue_epoch
     else:
@@ -175,7 +178,7 @@ def train(config, stop_flag=None, progress_callback=None):
             param.requires_grad = False
     
     # Run training
-    for epoch_idx in range(start_epoch, num_epochs):
+    for epoch_idx in range(start_epoch, num_epochs + 1):
         
         print(f"epoch = {epoch_idx + 1}")
         # logger.info(f"epoch = {epoch_idx + 1}")
@@ -245,15 +248,15 @@ def train(config, stop_flag=None, progress_callback=None):
             optimizer.step()
 
             # ****** 학습 중지 플래그 확인 ******
-            if stop_flag():  # stop_flag가 True이면 학습 중단
+            if stop_flag and stop_flag():  # stop_flag가 True이면 학습 중단
                 print("학습 중지 요청됨. 학습을 종료합니다.")
                 release_cuda(model=model, 
-                             optimizer=optimizer, 
-                             vae=vae, 
-                             text_model=text_model, 
-                             empty_text_embed=empty_text_embed, 
-                             text_tokenizer=text_tokenizer, 
-                             scheduler=scheduler)
+                            optimizer=optimizer, 
+                            vae=vae, 
+                            text_model=text_model, 
+                            empty_text_embed=empty_text_embed, 
+                            text_tokenizer=text_tokenizer, 
+                            scheduler=scheduler)
                 return
 
         print('Finished epoch:{} | Loss : {:.4f}'.format(
@@ -278,10 +281,10 @@ def train(config, stop_flag=None, progress_callback=None):
                 
                 
         #         for iii in range(sample_config["num_gen_img"]):
-        #             print(f"sampleing cycle: {iii} -------------------- ")
+        #             print(f"sampling cycle: {iii} / {sample_config['num_gen_img']}-------------------- ")
 
-        #             # 첫번째 불량
-        #             text_prompt = ['(33, 409), first1st']
+        #             # 첫번째 불량 (1637)
+        #             text_prompt = ['(886, 631), abcd']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -290,8 +293,8 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 autoencoder_model_config, diffusion_config, dataset_config,
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
                     
-        #             # 2
-        #             text_prompt = ['(29, 455), first1st']
+        #             # 2 (700)
+        #             text_prompt = ['(525, 487), abcd']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -301,8 +304,8 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
 
-        #             # 3
-        #             text_prompt = ['(160, 442), first1st']
+        #             # 3  (2378)
+        #             text_prompt = ['(488, 416), abcd']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -312,7 +315,7 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
         #             # 4
-        #             text_prompt = ['(284, 506), first1st']
+        #             text_prompt = ['(284, 506), abcd']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -321,8 +324,8 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 autoencoder_model_config, diffusion_config, dataset_config,
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
-        #             # 5
-        #             text_prompt = ['(579, 269), second2nd']
+        #             # 5 (3906)
+        #             text_prompt = ['(407, 740), abcd']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -331,8 +334,8 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 autoencoder_model_config, diffusion_config, dataset_config,
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
-        #             # 6
-        #             text_prompt = ['(114, 564), third3rd']
+        #             # 6 (5328)
+        #             text_prompt = ['(633, 545), abcd']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -341,8 +344,8 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 autoencoder_model_config, diffusion_config, dataset_config,
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
-        #             # 7
-        #             text_prompt = ['(514, 567), fourth4th']
+        #             # 7 (6167)
+        #             text_prompt = ['(172, 592), abcd']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -351,8 +354,8 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 autoencoder_model_config, diffusion_config, dataset_config,
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
-        #             # 8
-        #             text_prompt = ['(641, 895), fourth4th']
+        #             # 8 (7810)
+        #             text_prompt = ['(781, 814), abcd']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -361,8 +364,8 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 autoencoder_model_config, diffusion_config, dataset_config,
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
-        #             # 9
-        #             text_prompt = ['(844, 801), fourth4th']
+        #             # 9 (9302)
+        #             text_prompt = ['(697, 800), abcd']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -371,8 +374,8 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 autoencoder_model_config, diffusion_config, dataset_config,
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
-        #             # 10
-        #             text_prompt = ['(520, 708), fourth4th']
+        #             # 10 (9886)
+        #             text_prompt = ['(418, 705), abcd']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -433,21 +436,25 @@ if __name__ == '__main__':
 
     # Read the config file
     # with open(args.config_path, 'r') as file:
-    with open(r"G:\project\genAI\stable_diffusion_from_scratch\StableDiffusion-PyTorch\config\Asdf_text_cond_coord_ui.yaml", 'r') as file:
+    dir_now = os.path.dirname(__file__)
+    path_config = os.path.join(dir_now, "..", "config", "config.yaml")
+
+    with open(path_config, 'r') as file:
         try:
             config = yaml.safe_load(file)
         except yaml.YAMLError as exc:
             print(exc)
 
-    config["sample_params"]["jitter_std"] = 10
-    config["train_params"]["ldm_epochs"] = 20
+    config["sample_params"]["jitter_std"] = 0
+    config["train_params"]["ldm_epochs"] = 200
     config["train_params"]["autoencoder_epochs"] = 30
-    config["train_params"]["task_name"] = 'Asdf'
+    config["train_params"]["task_name"] = 'task1'
     config["diffusion_params"]["num_timesteps"] = 1000
-    config["dataset_params"]["im_path"] = r'C:\Users\JWKim\Downloads\generic_data'
+    # config["dataset_params"]["im_path"] = r'C:\Users\JWKim\Downloads\generic_data'
+    config["dataset_params"]["im_path"] = r'G:\project\genAI\stable_diffusion_from_scratch\StableDiffusion-PyTorch\generic_data'
     config["dataset_params"]["im_size"] = 128
 
-    print(config)
+    print("[INFO] Completed loading config")
     ########################
 
     train(config=config)

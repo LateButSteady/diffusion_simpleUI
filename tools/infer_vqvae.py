@@ -1,6 +1,5 @@
-import argparse
 import glob
-import os
+import os, sys
 import pickle
 
 import torch
@@ -10,30 +9,22 @@ from torch.utils.data.dataloader import DataLoader
 from torchvision.utils import make_grid
 from tqdm import tqdm
 
-from dataset.celeb_dataset import CelebDataset
-from dataset.mnist_dataset import MnistDataset
+dir_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(dir_root))
+
+from dataset.Asdf_dataset_coord import AsdfDataset
 from models.vqvae import VQVAE
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
-def infer(args):
-    ######## Read the config file #######
-    with open(args.config_path, 'r') as file:
-        try:
-            config = yaml.safe_load(file)
-        except yaml.YAMLError as exc:
-            print(exc)
-    print(config)
-    
+def infer(config):
     dataset_config = config['dataset_params']
     autoencoder_config = config['autoencoder_params']
     train_config = config['train_params']
     
     # Create the dataset
     im_dataset_cls = {
-        'mnist': MnistDataset,
-        'celebhq': CelebDataset,
+        'Asdf': AsdfDataset,
     }.get(dataset_config['name'])
     
     im_dataset = im_dataset_cls(split='train',
@@ -53,12 +44,15 @@ def infer(args):
     idxs = torch.randint(0, len(im_dataset) - 1, (num_images,))
     ims = torch.cat([im_dataset[idx][None, :] for idx in idxs]).float()
     ims = ims.to(device)
-    
+    print(f"[INFO] Selected {num_images} images to test VAE")
+
     model = VQVAE(im_channels=dataset_config['im_channels'],
                   model_config=autoencoder_config).to(device)
     model.load_state_dict(torch.load(os.path.join(train_config['task_name'],
-                                                    train_config['vqvae_autoencoder_ckpt_name']),
-                                     map_location=device))
+                                                  train_config['vqvae_autoencoder_ckpt_name']),
+                          map_location=device))
+    print(f"[INFO] Loaded VAE model")
+
     model.eval()
     
     with torch.no_grad():
@@ -82,6 +76,8 @@ def infer(args):
         encoder_grid.save(os.path.join(train_config['task_name'], 'encoded_samples.png'))
         decoder_grid.save(os.path.join(train_config['task_name'], 'reconstructed_samples.png'))
         
+        print(f"[INFO] Completed reconstructing VAE images")
+
         if train_config['save_latents']:
             # save Latents (but in a very unoptimized way)
             latent_path = os.path.join(train_config['task_name'], train_config['vqvae_latent_dir_name'])
@@ -112,8 +108,29 @@ def infer(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Arguments for vq vae inference')
-    parser.add_argument('--config', dest='config_path',
-                        default='config/mnist.yaml', type=str)
-    args = parser.parse_args()
-    infer(args)
+
+    dir_now = os.path.dirname(__file__)
+    path_config = os.path.join(dir_now, "..", "config", "config.yaml")
+
+    with open(path_config, 'r') as file:
+        try:
+            config = yaml.safe_load(file)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+    # config["sample_params"]["jitter_std"] = 0
+    # config["train_params"]["ldm_epochs"] = 200
+    # config["train_params"]["autoencoder_epochs"] = 30
+    config["train_params"]["task_name"] = 'task1'
+    # config["diffusion_params"]["num_timesteps"] = 1000
+    config["dataset_params"]["im_path"] = r'C:\Users\JWKim\Downloads\generic_data'
+    config["dataset_params"]["im_size"] = 128
+
+    print("[INFO] Completed loading config")
+
+    # parser = argparse.ArgumentParser(description='Arguments for vq vae inference')
+    # parser.add_argument('--config', dest='config_path',
+    #                     default='config/mnist.yaml', type=str)
+    # args = parser.parse_args()
+    # infer(args)
+    infer(config)

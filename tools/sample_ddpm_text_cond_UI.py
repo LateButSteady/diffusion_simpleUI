@@ -88,7 +88,7 @@ def sample(model, text_prompt, scheduler, train_config, diffusion_model_config,
     ################# Sampling Loop ########################
     with torch.no_grad():   # 이게 없으면 VRAM 사용량 폭증
         for i in tqdm(reversed(range(diffusion_config['num_timesteps']))):
-            if stop_flag():  # stop_flag가 True이면 학습 중단
+            if stop_flag and stop_flag():  # stop_flag가 True이면 학습 중단
                 release_cuda(model, vae, text_tokenizer, text_model)
                 return
 
@@ -172,7 +172,6 @@ def infer(config, stop_flag=None, progress_callback=None):
     #list_defect_gen = sample_config['list_defect_gen']
     defect_gen = sample_config["defect_gen"]
     num_gen_img = sample_config["num_gen_img"]
-    #jitter_std = sample_config['jitter_std']
     jitter_std = sample_config["jitter_std"]
     jitter_coord = sample_config['jitter_coord']    # True
     
@@ -222,7 +221,7 @@ def infer(config, stop_flag=None, progress_callback=None):
     ###############################################
 
     # ****** 학습 중지 플래그 확인 ******
-    if stop_flag():  # stop_flag가 True이면 학습 중단
+    if stop_flag and stop_flag():  # stop_flag가 True이면 학습 중단
         print("이미지 생성 중지 요청됨. 종료합니다.")
         release_cuda(None, None, text_tokenizer, text_model)
         return
@@ -347,7 +346,7 @@ def infer(config, stop_flag=None, progress_callback=None):
 
     for j in range(num_gen_img):
         # ****** 학습 중지 플래그 확인 ******
-        if stop_flag():  # stop_flag가 True이면 학습 중단
+        if stop_flag and stop_flag():  # stop_flag가 True이면 학습 중단
             print("이미지 생성 중지 요청됨. 종료합니다.")
             release_cuda(model, vae, text_tokenizer, text_model)
             return
@@ -405,11 +404,28 @@ def release_cuda(model, vae, text_tokenizer, text_model):
 if __name__ == '__main__':
     import yaml
     # Read the config file #
-    with open(r"G:\project\genAI\stable_diffusion_from_scratch\StableDiffusion-PyTorch\config\Asdf_text_cond_coord_UI.yaml", 'r') as file:
+    dir_now = os.path.dirname(__file__)
+    path_config = os.path.join(dir_now, "..", "config", "config.yaml")
+
+    with open(path_config, 'r') as file:
         try:
             config = yaml.safe_load(file)
         except yaml.YAMLError as exc:
             print(f"[ERROR] yaml file load error: {exc}")
+
+    config["sample_params"]["jitter_std"] = 10
+    config["sample_params"]["random_coord"] = False
+    config["sample_params"]["gen_coord"] = (100, 50)
+
+    config["train_params"]["ldm_epochs"] = 20
+    config["train_params"]["autoencoder_epochs"] = 30
+    config["train_params"]["task_name"] = 'task1'
+
+    config["diffusion_params"]["num_timesteps"] = 1000
+    
+    config["dataset_params"]["im_path"] = r'C:\Users\JWKim\Downloads\generic_data'
+    config["dataset_params"]["im_size"] = 128
+
 
     try:
         infer(config)

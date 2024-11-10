@@ -212,8 +212,10 @@ class MidBlock(nn.Module):
                  for _ in range(num_layers)]
             )
             self.context_proj = nn.ModuleList(
-                [nn.Linear(context_dim, out_channels)
-                 for _ in range(num_layers)]
+                # [nn.Linear(context_dim, out_channels) for _ in range(num_layers)]
+                # 좌표 정보 embedding 들어가는 곳 
+                [nn.Linear(in_features=context_dim,  out_features=out_channels)] + 
+                [nn.Linear(in_features=out_channels, out_features=out_channels) for _ in range(num_layers - 1)]
             )
         self.residual_input_conv = nn.ModuleList(
             [
@@ -250,7 +252,13 @@ class MidBlock(nn.Module):
                 in_attn = self.cross_attention_norms[i](in_attn)
                 in_attn = in_attn.transpose(1, 2)
                 assert context.shape[0] == x.shape[0] and context.shape[-1] == self.context_dim
-                context_proj = self.context_proj[i](context)
+
+                ##### 첫번째 mid layer만 좌표 정보 들어가게 하드코딩
+                # context_proj = self.context_proj[i](context)
+                if i == 0:
+                    context_proj = self.context_proj[i](context)
+                else:
+                    context_proj = self.context_proj[i](context[:,:,:-2])
                 out_attn, _ = self.cross_attentions[i](in_attn, context_proj, context_proj)
                 out_attn = out_attn.transpose(1, 2).reshape(batch_size, channels, h, w)
                 out = out + out_attn
