@@ -160,10 +160,10 @@ class WindowClass(QMainWindow, form_class):
         try:
             with open(path_config, 'r') as file:
                 self.config = yaml.safe_load(file)
-                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "config 파일 로딩 - OK"))
+                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "Loading config - OK"))
         except yaml.YAMLError as exc:
-            # self.append_to_console("[에러] config 파일 로딩 - Fail")
-            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "[에러] config 파일 로딩 - Fail"))
+            # self.append_to_console("[ERROR] config 파일 로딩 - Fail")
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "[ERROR] Loading config - Fail"))
             QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, exc))
             # self.append_to_console(exc)
 
@@ -174,7 +174,7 @@ class WindowClass(QMainWindow, form_class):
         """
         dataset 유효성 검사
         """
-        QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"데이터셋 검사 시작..."))
+        QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Checking dataset..."))
 
         self.pathImg = self.edit_pathImg.toPlainText()
         self.config["dataset_params"]["im_path"] = self.pathImg
@@ -183,26 +183,26 @@ class WindowClass(QMainWindow, form_class):
 
         # caption, img 폴더 유무
         if not os.path.exists(dir_caption) or not os.path.exists(dir_img):
-            msg = "[에러] 데이터셋 검사 - Fail: 폴더/파일을 찾을 수 없음"
+            msg = "[ERROR] Checking dataset - Fail: NOT Found: image or caption folder"
             QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, msg))
             return False#, msg
 
         # caption 파일들 보면서 불량명 취합 --> dropdown 업데이트
         # 불량명 combobox 업데이트
-        QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"불량명 취합 시작..."))
+        QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Collecting defect names..."))
         self.get_caption_info()
         if not self.defects:
-            msg = "[에러] 불량명 취합 - Fail: 불량명을 찾을 수 없음"
+            msg = "[ERROR] Collecting defect names - Fail: Cannot find defect name"
             QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, msg))
             return False#, msg
         
         # 메인 스레드에서 콤보박스 업데이트 실행
         QMetaObject.invokeMethod(self, "update_defect_combobox", Qt.QueuedConnection, Q_ARG(list, self.defects))
-        QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "불량명 취합 - OK"))
+        QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "Collecting defect names - OK"))
                 
         # TODO caption에는 있는데, img에는 없는 (vice versa) 불일치 파일 체크
 
-        QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"데이터셋 검사 - OK"))
+        QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Checking dataset - OK"))
 
         return True # error msg를 console에 출력하기 위해 msg도 return 고려
 
@@ -213,8 +213,8 @@ class WindowClass(QMainWindow, form_class):
         ##### 2. VAE 학습 영역 검사 #####
         # VAE epoch
         if not self.check_emptyEditText(self.edit_epochVae.toPlainText(), 
-                                        msg_dialog="2. VAE Epoch 값을 입력해주세요",
-                                        msg_console="[에러] VAE Epoch 값 입력되지 않음"):
+                                        msg_dialog="2. Enter VAE Epoch value",
+                                        msg_console="[ERROR] NOT Found: VAE Epoch value"):
             return
         # TODO numeric인지 검사 필요
         self.config["train_params"]["autoencoder_epochs"] = int(self.edit_epochVae.toPlainText())
@@ -252,7 +252,7 @@ class WindowClass(QMainWindow, form_class):
 
             # 메인 스레드에서 콘솔에 메시지를 출력
             # 다른 스레드에서 콘솔 변경을 시도하는건 맞지 않음
-            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "VAE 학습 시작..."))
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "Training VAE..."))
 
             def update_progress(epoch):
                 """
@@ -266,13 +266,13 @@ class WindowClass(QMainWindow, form_class):
 
             # ****** 학습 중지 플래그 확인 ******
             if self.stop_training_flag:
-                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "VAE 학습 중지됨."))
+                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "Stopped training VAE"))
             else:
-                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "VAE 학습 완료"))
+                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "Completed training VAE"))
 
         except Exception as e:
-            self.show_error_dialog_thread("VAE 학습 실패")
-            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"[에러] VAE 학습 실패: {e}"))
+            self.show_error_dialog_thread("Failed training VAE")
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"[ERROR] Failed training VAE: {e}"))
         finally:
             self.thread_train = None
             # 다른 영역 재활성화
@@ -296,8 +296,8 @@ class WindowClass(QMainWindow, form_class):
         # TODO numeric인지 검사
         if not self.check_emptyEditText(
             self.edit_epochDdpm.toPlainText(), 
-            msg_dialog="3. Diffusion Epoch 값을 입력해주세요",
-            msg_console="[에러] Diffusion Epoch 값 입력되지 않음"):
+            msg_dialog="3. Enter Diffusion Epoch value",
+            msg_console="[ERROR] NOT Found: Diffusion Epoch value"):
             return
         self.config["train_params"]["ldm_epochs"] = int(self.edit_epochDdpm.toPlainText())
 
@@ -305,8 +305,8 @@ class WindowClass(QMainWindow, form_class):
         # TODO numeric인지 검사
         if not self.check_emptyEditText(
             self.edit_timeStep.toPlainText(), 
-            msg_dialog="Time Step 값을 입력하세요",
-            msg_console="[에러] Time Step 값 입력되지 않음"):
+            msg_dialog="Enter Time Step value",
+            msg_console="[ERROR] NOT Found: Time Step value"):
             return
         self.config["diffusion_params"]["num_timesteps"] = int(self.edit_timeStep.toPlainText())
 
@@ -314,8 +314,8 @@ class WindowClass(QMainWindow, form_class):
         # TODO numeric인지 검사
         if not self.check_emptyEditText(
             self.edit_taskName.toPlainText(), 
-            msg_dialog="Task명을 입력하세요",
-            msg_console="[에러] Task명 입력되지 않음"):
+            msg_dialog="Enter Task name",
+            msg_console="[ERROR] NOT Found: Task name value"):
             return
         self.config["train_params"]["task_name"] = self.edit_taskName.toPlainText()
 
@@ -342,10 +342,10 @@ class WindowClass(QMainWindow, form_class):
             ##### 입력 파일 검사 #####
             # VAE ckpt 유무
             if not (os.path.exists(os.path.join(dir_root, self.config["train_params"]["task_name"], "vqvae_autoencoder_ckpt.pth")) and os.path.exists(os.path.join(dir_root, self.config["train_params"]["task_name"], "vqvae_discriminator_ckpt.pth"))) :
-                self.show_error_dialog_thread(f"""VAE 모델 파일 일부를 찾을 수 없습니다.
+                self.show_error_dialog_thread(f"""NOT Found: VAE model files
  - {self.config["train_params"]["task_name"]}/vqvae_autoencoder_ckpt.pth
  - {self.config["train_params"]["task_name"]}/vqvae_discriminator_ckpt.pth""")
-                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"[에러] VAE 모델 파일 없음"))
+                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"[ERROR] NOT Found: VAE model files"))
                 return
             
             ##### 1. 데이터 설정 영역 검사 #####
@@ -353,7 +353,7 @@ class WindowClass(QMainWindow, form_class):
             if not self.prep_dataset_config():
                 return
 
-            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Diffusion 학습 시작..."))
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Training Diffusion..."))
             
             def update_progress(epoch):
                 """
@@ -366,13 +366,13 @@ class WindowClass(QMainWindow, form_class):
             
             # ****** 학습 중지 플래그 확인 ******
             if self.stop_training_flag:
-                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Diffusion 학습 중지됨."))
+                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Stopped training Diffusion"))
             else:
-                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Diffusion 학습 완료"))    
+                QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Completed training Diffusion"))
 
         except Exception as e:
-            self.show_error_dialog_thread("Diffusion 학습 실패")
-            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"[에러] 학습 실패: {e}"))                
+            self.show_error_dialog_thread("Failed training Diffusion")
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"[ERROR] Failed training Diffusion: {e}"))
         finally:
             self.thread_train = None
             # 다른 영역 재활성화
@@ -396,7 +396,7 @@ class WindowClass(QMainWindow, form_class):
     def train_DDPM_thread(self):
         # 학습중인데 또 학습 버튼 누르면
         if self.thread_train is not None and self.thread_train.is_alive():
-            self.append_to_console("이미 Diffusion 학습이 진행 중입니다.")
+            self.append_to_console("Diffusion training is already in process")
             return
 
         self.stop_training_flag = False
@@ -407,7 +407,7 @@ class WindowClass(QMainWindow, form_class):
     def train_VAE_thread(self):
         # 학습중인데 또 학습 버튼 누르면
         if self.thread_train is not None and self.thread_train.is_alive():
-            self.append_to_console("이미 VAE 학습이 진행 중입니다.")
+            self.append_to_console("VAE training is already in process")
             return
 
         self.stop_training_flag = False
@@ -418,15 +418,15 @@ class WindowClass(QMainWindow, form_class):
     def stop_train(self):
         if self.thread_train is not None and self.thread_train.is_alive():
             self.stop_training_flag = True
-            self.append_to_console("학습 중지 요청됨...")
+            self.append_to_console("Requested to stop training...")
         else:
-            self.append_to_console("[에러] 중지할 학습이 없습니다.")
+            self.append_to_console("[ERROR] There is NO train process to stop")
 
 
     def gen_img_thread(self):
         # 학습중인데 또 학습 버튼 누르면 안내
         if self.thread_gen is not None and self.thread_gen.is_alive():
-            self.append_to_console("이미 이미지 생성이 진행 중입니다.")
+            self.append_to_console("Image generation is already in process.")
             return
 
         self.stop_genImg_flag = False
@@ -440,8 +440,8 @@ class WindowClass(QMainWindow, form_class):
         # TODO numeric인지 검사
         if not self.check_emptyEditText(
             self.edit_numGenImg.toPlainText(), 
-            msg_dialog="생성 이미지 개수를 입력해주세요.",
-            msg_console="[에러] 생성 이미지 개수 입력되지 않음"):
+            msg_dialog="Enter the number of images to generate",
+            msg_console="[ERROR] NOT Found: the number of images to generate"):
             return
         self.config["sample_params"]["num_gen_img"] = int(self.edit_numGenImg.toPlainText())
 
@@ -449,8 +449,8 @@ class WindowClass(QMainWindow, form_class):
         # TODO numeric인지 검사
         if not self.check_emptyEditText(
             self.edit_genImgCoordX.toPlainText() and self.edit_genImgCoordY.toPlainText(), # 둘 중 하나라도 빈 str이면 함수 안에서 False
-            msg_dialog="생성 좌표 값을 입력하세요",
-            msg_console="[에러] 생성 좌표 값 입력되지 않음"):
+            msg_dialog="Enter the coordinates embedding condition",
+            msg_console="[ERROR] NOT Found: Corrdinates embedding condition"):
             return
         self.config["sample_params"]["gen_coord"] = (int(self.edit_genImgCoordX.toPlainText()), int(self.edit_genImgCoordY.toPlainText()))
 
@@ -458,8 +458,8 @@ class WindowClass(QMainWindow, form_class):
         # TODO numeric인지 검사
         if not self.check_emptyEditText(
             self.edit_timeStep.toPlainText(), 
-            msg_dialog="Time Step 값을 입력하세요",
-            msg_console="[에러] Time Step 값 입력되지 않음"):
+            msg_dialog="Enter Time Step value",
+            msg_console="[ERROR] NOT Found: Time Step value"):
             return
         self.config["diffusion_params"]["num_timesteps"] = int(self.edit_timeStep.toPlainText())
 
@@ -474,8 +474,8 @@ class WindowClass(QMainWindow, form_class):
         # defect dropbox
         if not self.check_emptyEditText(
             self.combo_defects.currentText(),
-            msg_dialog="생성하려는 불량을 선택하세요",
-            msg_console="[에러] 생성 불량 선택되지 않음"):
+            msg_dialog="Choose a defect to generate",
+            msg_console="[ERROR] NOT Found: defect name to generate"):
             return
         self.config["sample_params"]["defect_gen"] = self.combo_defects.currentText()
 
@@ -502,7 +502,7 @@ class WindowClass(QMainWindow, form_class):
         QMetaObject.invokeMethod(self.btn_genImg, "setEnabled", Q_ARG(bool, False))
 
         try:
-            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"이미지 생성 시작..."))
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Generating images..."))
 
             def update_progress(j):
                 """
@@ -513,10 +513,10 @@ class WindowClass(QMainWindow, form_class):
             # 학습 함수 호출 시 언제든지 중지할수 있도록 stop_flag 함수 전달
             # progress bar를 사용할 수 있도록 callback 전달
             infer(self.config, self.is_genImg_stopped, progress_callback=update_progress)
-            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"이미지 생성 완료"))
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Completed generating images"))
         except Exception as e:
-            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"이미지 생성 - Fail"))
-            self.show_error_dialog_thread(f"이미지 생성 - Fail: {e}")
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Image generation - Fail"))
+            self.show_error_dialog_thread(f"Image generation - Fail: {e}")
         finally:
             # 다른 영역 재활성화
             QMetaObject.invokeMethod(self.progressBar_gen, "setEnabled", Q_ARG(bool, False))
@@ -540,9 +540,9 @@ class WindowClass(QMainWindow, form_class):
     def stop_genImg(self):
         if self.thread_gen is not None and self.thread_gen.is_alive():
             self.stop_genImg_flag = True
-            self.append_to_console("이미지 생성 중지 요청됨...")
+            self.append_to_console("Requested to stop image generation...")
         else:
-            self.append_to_console("[에러] 중지할 생성 작업이 없습니다.")
+            self.append_to_console("[ERROR] There is NO generation process to stop")
 
 
     def check_emptyEditText(self, text: str, msg_dialog: str, msg_console: str) -> bool:
@@ -570,7 +570,7 @@ class WindowClass(QMainWindow, form_class):
     def click_checkImgPath(self):
         # 스레드가 이미 실행 중인 경우 방지
         if self.thread_check_dataset is not None and self.thread_check_dataset.is_alive():
-            self.append_to_console("[에러] 데이터 체크가 이미 진행 중입니다.")
+            self.append_to_console("[ERROR] Dataset checking is already in process")
             return
         
         # 새 스레드로 작업 실행
@@ -599,13 +599,13 @@ class WindowClass(QMainWindow, form_class):
 
             # empty 체크
             if not self.check_emptyEditText(self.pathImg, 
-                                            msg_dialog="이미지 폴더 경로를 입력해주세요",
-                                            msg_console="[에러] 이미지 폴더 경로 입력되지 않음"):
+                                            msg_dialog="Enter Image Folder Path",
+                                            msg_console="[ERROR] NOT Found: Image Folder Path"):
                 return
 
             if not self.check_emptyEditText(self.taskName, 
-                                            msg_dialog="Output 폴더명을 입력해주세요",
-                                            msg_console="[에러] Output 폴더명 입력되지 않음"):
+                                            msg_dialog="Enter Output Folder name",
+                                            msg_console="[ERROR] NOT Found: Output Folder name"):
                 return
             
             # config 값 업데이트
@@ -620,7 +620,7 @@ class WindowClass(QMainWindow, form_class):
 
 
             # 데이터 검사
-            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"이미지 폴더 검사 시작..."))
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Checking Image Folder..."))
             if self.checkImgPath():
                 self.status_ok0_fail1(0)
                 return
@@ -629,8 +629,8 @@ class WindowClass(QMainWindow, form_class):
                 return
 
         except Exception as e:
-            print(f"[ERROR] 데이터 체크 - Fail: {e}")
-            self.show_error_dialog_thread(msg=f"에러 발생: {e}")
+            print(f"[ERROR] Check data - Fail: {e}")
+            self.show_error_dialog_thread(msg=f"Error occurred: {e}")
         finally:
             # ProgressBar 비활성화
             QMetaObject.invokeMethod(self.progressBar_dataset, "setEnabled", Q_ARG(bool, False))
@@ -654,12 +654,12 @@ class WindowClass(QMainWindow, form_class):
             # 데이터 체크 OK
             QMetaObject.invokeMethod(self.text_imgPathStatus, "setText", Q_ARG(str, "OK"))
             QMetaObject.invokeMethod(self.text_imgPathStatus, "setStyleSheet", Q_ARG(str, "color: green"))
-            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"이미지 폴더 검사 - OK"))
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Checking Image Folder - OK"))
         else:
             # 데이터 체크 Fail
             QMetaObject.invokeMethod(self.text_imgPathStatus, "setText", Q_ARG(str, "Fail"))
             QMetaObject.invokeMethod(self.text_imgPathStatus, "setStyleSheet", Q_ARG(str, "color: red"))
-            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"이미지 폴더 검사 - Fail"))
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, f"Checking Image Folder - Fail"))
 
 
     @pyqtSlot(list)
@@ -751,16 +751,16 @@ class WindowClass(QMainWindow, form_class):
         ##### 빈칸 확인 #####
         # 데이터 경로
         if not self.check_emptyEditText(self.edit_pathImg.toPlainText(), 
-                                        msg_dialog="이미지 폴더 경로를 입력해주세요",
-                                        msg_console="[에러] 이미지 폴더 경로 입력되지 않음"):
+                                        msg_dialog="Enter Image Folder Path",
+                                        msg_console="[ERROR] NOT Found: Image Folder Path"):
             self.status_ok0_fail1(1)
             return False
         self.config["dataset_params"]["im_path"] = self.edit_pathImg.toPlainText()
 
         # task name
         if not self.check_emptyEditText(self.edit_taskName.toPlainText(), 
-                                        msg_dialog="Output 폴더명을 입력해주세요",
-                                        msg_console="[에러] Output 폴더명 입력되지 않음"):
+                                        msg_dialog="Enter Output Folder name",
+                                        msg_console="[ERROR] NOT Found: Output Folder name"):
             self.status_ok0_fail1(1)
             return False
         
@@ -772,8 +772,8 @@ class WindowClass(QMainWindow, form_class):
         # QBasicTimer::start: QBasicTimer can only be used with threads started with QThread
         #   => 해결: main_thread에서 업데이트 하도록 변경 (QMetaObject.invokeMethod)
         if not self.checkImgPath():
-            self.show_error_dialog_thread(msg="이미지 폴더 경로를 확인하세요")
-            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "[에러] 이미지 폴더 경로 유효하지 않음"))
+            self.show_error_dialog_thread(msg="Enter Image Folder Path")
+            QMetaObject.invokeMethod(self, "append_to_console", Qt.QueuedConnection, Q_ARG(str, "[ERROR] Image Folder Path is not valid"))
 
             self.status_ok0_fail1(1)
             return False
@@ -784,7 +784,7 @@ class WindowClass(QMainWindow, form_class):
         if "im_path" in self.config["dataset_params"]:
             # key는 있는데 현재 edit 칸의 경로 값과 다르면 사용자 확인
             if self.config["dataset_params"]["im_path"] != self.edit_pathImg.toPlainText():
-                if (self.show_yes_no_dialog("이미지 폴더 경로 값이 변경된 것 같습니다.\n현재 입력 경로로 학습할까요?")):
+                if (self.show_yes_no_dialog("Seems like Image Folder Path is changed.\nDo you want to use the path in the textbox?")):
                     self.config["dataset_params"]["im_path"] = self.edit_pathImg.toPlainText()
         else:
             self.config["dataset_params"]["im_path"] != self.edit_pathImg.toPlainText()
@@ -823,7 +823,7 @@ class WindowClass(QMainWindow, form_class):
                                      # show() (비모달방식-메인UI 동시 조작 가능) 사용
         
         except Exception as e:
-            self.show_error_dialog_thread(msg=f"도움말 불러오기 실패: {e}")
+            self.show_error_dialog_thread(msg=f"Failed loading help contents: {e}")
 
 
     def show_error_dialog_thread(self, msg):
@@ -841,7 +841,7 @@ class WindowClass(QMainWindow, form_class):
         error_dialog.setIcon(QMessageBox.Critical)
         error_dialog.setText(msg)
         #error_dialog.setInformativeText(msg)
-        error_dialog.setWindowTitle("에러")
+        error_dialog.setWindowTitle("ERROR")
         error_dialog.setStandardButtons(QMessageBox.Ok)
         error_dialog.exec_()
 

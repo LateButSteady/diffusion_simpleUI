@@ -222,7 +222,7 @@ def infer(config, stop_flag=None, progress_callback=None):
 
     # ****** 학습 중지 플래그 확인 ******
     if stop_flag and stop_flag():  # stop_flag가 True이면 학습 중단
-        print("이미지 생성 중지 요청됨. 종료합니다.")
+        print("Requested to stop image generation. Terminating.")
         release_cuda(None, None, text_tokenizer, text_model)
         return
 
@@ -320,7 +320,7 @@ def infer(config, stop_flag=None, progress_callback=None):
                     np_x_jitter = np.round(np_x_jitter).astype('int')
                     cnt += 1
                 else:
-                    raise ValueError("랜덤 좌표 생성에 실패했습니다.")
+                    raise ValueError("Failed generating random coordinates")
 
             cnt = 0
             while any(np_y_jitter < 0):
@@ -330,7 +330,7 @@ def infer(config, stop_flag=None, progress_callback=None):
                     np_y_jitter = np.round(np_y_jitter).astype('int')
                     cnt += 1
                 else:
-                    raise ValueError("랜덤 좌표 생성에 실패했습니다.")
+                    raise ValueError("Failed generating random coordinates")
             
             np_pick_xy = np.column_stack((np_x_jitter, np_y_jitter))
         else:
@@ -347,7 +347,7 @@ def infer(config, stop_flag=None, progress_callback=None):
     for j in range(num_gen_img):
         # ****** 학습 중지 플래그 확인 ******
         if stop_flag and stop_flag():  # stop_flag가 True이면 학습 중단
-            print("이미지 생성 중지 요청됨. 종료합니다.")
+            print("Requested to stop image generation. Terminating.")
             release_cuda(model, vae, text_tokenizer, text_model)
             return
 

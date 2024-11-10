@@ -249,7 +249,7 @@ def train(config, stop_flag=None, progress_callback=None):
 
             # ****** 학습 중지 플래그 확인 ******
             if stop_flag and stop_flag():  # stop_flag가 True이면 학습 중단
-                print("학습 중지 요청됨. 학습을 종료합니다.")
+                print("Requested to stop training. Terminating training.")
                 release_cuda(model=model, 
                             optimizer=optimizer, 
                             vae=vae, 
