@@ -286,7 +286,7 @@ def train(config, stop_flag=None, progress_callback=None):
         #             print(f"sampling cycle: {iii} / {sample_config['num_gen_img']}-------------------- ")
 
         #             # 첫번째 불량 (1637)
-        #             text_prompt = ['(886, 631), abcd']
+        #             text_prompt = ['(886, 631), star']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -296,7 +296,7 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
                     
         #             # 2 (700)
-        #             text_prompt = ['(525, 487), abcd']
+        #             text_prompt = ['(525, 487), circle']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -307,7 +307,7 @@ def train(config, stop_flag=None, progress_callback=None):
 
 
         #             # 3  (2378)
-        #             text_prompt = ['(488, 416), abcd']
+        #             text_prompt = ['(488, 416), square']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -317,7 +317,7 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
         #             # 4
-        #             text_prompt = ['(284, 506), abcd']
+        #             text_prompt = ['(284, 506), star']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -327,7 +327,7 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
         #             # 5 (3906)
-        #             text_prompt = ['(407, 740), abcd']
+        #             text_prompt = ['(407, 740), triangle']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -337,7 +337,7 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
         #             # 6 (5328)
-        #             text_prompt = ['(633, 545), abcd']
+        #             text_prompt = ['(633, 545), triangle']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -347,7 +347,7 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
         #             # 7 (6167)
-        #             text_prompt = ['(172, 592), abcd']
+        #             text_prompt = ['(172, 592), triangle']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -357,7 +357,7 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
         #             # 8 (7810)
-        #             text_prompt = ['(781, 814), abcd']
+        #             text_prompt = ['(781, 814), square']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -367,7 +367,7 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
         #             # 9 (9302)
-        #             text_prompt = ['(697, 800), abcd']
+        #             text_prompt = ['(697, 800), star']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)
@@ -377,7 +377,7 @@ def train(config, stop_flag=None, progress_callback=None):
         #                 vae, text_tokenizer, text_model, path_img, stop_flag)
 
         #             # 10 (9886)
-        #             text_prompt = ['(418, 705), abcd']
+        #             text_prompt = ['(418, 705), square']
         #             token = text_prompt[0].replace(" ", "").replace("(", "").replace(")", "").split(",")
         #             path_img = os.path.join(dir_gen_img, f'{token[0]}_{token[1]}_{token[2]}_[{iii}]_ep{epoch_idx}.bmp')
         #             print("path_img: ", path_img)

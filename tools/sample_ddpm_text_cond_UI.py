@@ -173,7 +173,7 @@ def infer(config, stop_flag=None, progress_callback=None):
     defect_gen = sample_config["defect_gen"]
     num_gen_img = sample_config["num_gen_img"]
     jitter_std = sample_config["jitter_std"]
-    jitter_coord = sample_config['jitter_coord']    # True
+    #jitter_coord = sample_config['jitter_coord']    # True
     
     #path_csv_fname_offset_class = sample_config['path_csv_fname_offset_class']
     #############################
@@ -413,21 +413,33 @@ if __name__ == '__main__':
         except yaml.YAMLError as exc:
             print(f"[ERROR] yaml file load error: {exc}")
 
-    config["sample_params"]["jitter_std"] = 10
+        
+    config["sample_params"]["jitter_std"] = 0
     config["sample_params"]["random_coord"] = False
-    config["sample_params"]["gen_coord"] = (100, 50)
+    #config["sample_params"]["gen_coord"] = (100, 50)
 
-    config["train_params"]["ldm_epochs"] = 20
-    config["train_params"]["autoencoder_epochs"] = 30
-    config["train_params"]["task_name"] = 'task1'
+    #config["train_params"]["ldm_epochs"] = 20
+    #config["train_params"]["autoencoder_epochs"] = 30
+    config["train_params"]["task_name"] = 'task_vine'
 
     config["diffusion_params"]["num_timesteps"] = 1000
     
-    config["dataset_params"]["im_path"] = r'C:\Users\JWKim\Downloads\generic_data'
+    #config["dataset_params"]["im_path"] = r'C:\Users\JWKim\Downloads\generic_data'
     config["dataset_params"]["im_size"] = 128
+    
+    config["sample_params"]["num_gen_img"] = 5
 
+    list_coord = [(108, 175), (95, 66), (192, 369), (181, 230), (266, 169), (78, 109), (312, 95), (51, 393), (39, 225), (12, 14)]
+    list_defect = ["star", "triangle", "square", "circle", "star", "triangle", "square", "star", "triangle", "square",]
+    list_fname_model = [f"{n}.pth" for n in range(0, 241, 20)] + ["ddpm_ckpt_text_cond_clip.pth"]
 
-    try:
-        infer(config)
-    except Exception as e:
-        logging.critical(f"[ERROR] Unhandled exception: {e}", exc_info=True)
+    for fname in list_fname_model:
+        config["train_params"]["ldm_ckpt_name"] = fname
+        for i, coord in enumerate(list_coord[:2]):
+            config["sample_params"]["gen_coord"] = coord
+            config["sample_params"]["defect_gen"] = list_defect[i]
+
+        try:
+            infer(config)
+        except Exception as e:
+            logging.critical(f"[ERROR] Unhandled exception: {e}", exc_info=True)

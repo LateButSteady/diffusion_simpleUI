@@ -127,7 +127,7 @@ class WindowClass(QMainWindow, form_class):
 
     # UI custom 설정
     def initUI(self):
-        self.setWindowTitle('DiffuGen')
+        self.setWindowTitle('Simple Diffusion UI')
         self.setWindowIcon(QIcon(path_icon))
 
         # 최상단 표시

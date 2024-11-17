@@ -3,15 +3,13 @@
    - GPU: RTX 3060 or higher
    - Operating Environment: Windows 10 or higher
 
-## 2. Install Python (version 3.10 or higher)
-   - https://www.python.org/downloads/release/python-3100/
-   - It is recommended to install Python in an easily accessible path (e.g., D:\python\python310)
+## 2. Install Python (version 3.9 or higher)
+   - Access URL and download the python install file  https://www.python.org/downloads/release/python-3920/
+   - It is recommended to install Python in an easily accessible path (e.g., D:\python\python39)
    - Remember the [Python installation path]
 
-## 3. Extract DiffuGen zip file and navigate to the folder
-
-## 4. Create a Virtual Environment
-   - Install Python 3.10 version
+## 3. Create a Virtual Environment
+   - Install Python 3.9 version
    - Install virtualenv and create a virtual environment
      <br>
      ```
@@ -22,13 +20,13 @@
    - A folder named venv will be created in the current directory
    - Run the run_venv.bat file; if a command prompt starting with (venv) appears, the setup is successful
 
-## 5. Virtual Environment Setup
+## 4. Virtual Environment Setup
    - **torch**
      - Access URL: https://download.pytorch.org/whl/torch/
-     - Download torch-1.11.0+cu115-cp310-cp310-win_amd64.whl file (recommended: default download folder)
+     - Download torch-1.11.0%2Bcu115-cp39-cp39-win_amd64.whl file (recommended: default download folder)
    - **torchvision**
      - Access URL: https://download.pytorch.org/whl/torchvision/
-     - Download torchvision-0.12.0+cu115-cp310-cp310-win_amd64.whl file (recommended: default download folder)
+     - Download torchvision-0.12.0%2Bcu115-cp39-cp39-win_amd64.whl file (recommended: default download folder)
    - Once the torch and torchvision files are downloaded, run install_packages.bat
      <br>
      ```
@@ -40,11 +38,11 @@
      - Click the Files tab next to Model card
      - Download all files to the openai/clip-vit-base-patch16 folder
 
-## 6. Run DiffuGen
-   - Navigate to the DiffuGen folder
-   - Run DiffuGen
+## 5. Run the UI script
+   - Navigate to the folder git-cloned
+   - Run sd_ui.py script
      <br>
      ```
-     python -m UI.sd_ui.pyc
+     python -m UI.sd_ui
      ```
      <br>
