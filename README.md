@@ -78,7 +78,7 @@
    ```
  - UI will pop-up  
  - Fill the information for training. Below is an examplary screenshot  
-   <img src="./docs/UI_example.png"/>
+   <img src="./docs/UI_example.png", width="50%" />
 
 ### 1. Check the image data
   - Click '**Check Data**' button to check validity of the data folder you prepared
