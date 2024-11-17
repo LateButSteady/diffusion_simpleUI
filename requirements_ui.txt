@@ -92,8 +92,6 @@ stack-data==0.6.3
 stdlib-list==0.10.0
 tinycss2==1.3.0
 tokenizers==0.15.1
-torch @ file:///C:/Users/JWKim/Downloads/torch-1.11.0%2Bcu115-cp39-cp39-win_amd64.whl#sha256=f67fbe8aa4e720077f0d34349228ecad58afd84395be437eedaa7b53d1baa3da
-torchvision @ file:///C:/Users/JWKim/Downloads/torchvision-0.12.0%2Bcu115-cp39-cp39-win_amd64.whl#sha256=838875ebaabb2562ad40c764f086b634fc2766b68a6b0c062da7d09be3a04745
 tornado==6.4.1
 tqdm==4.65.0
 traitlets==5.14.3
