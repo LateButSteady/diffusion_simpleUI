@@ -103,9 +103,10 @@
     . ddpm_ckpt_text_cond_clip.pth  
 
 ### 4. Generate Images
-  - Select '**Image Type**'
-  - Enter x, y coordinates in '**4-1. Embedding Conditions**'
+  - Select '**Image Type**'  
+  - Enter x, y coordinates in '**4-1. Embedding Conditions**'  
   - You can give some randomness to the enterred coordinates by the value of '**Jitter Strength**'  
-  - Check '**Random**' if you want to generate images from random location. It will select random coordinates in the range of the values of text files in caption folder
-  - The generated images are saved in '**cond_text_samples**'  
+  - Check '**Random**' if you want to generate images from random location. It will select random coordinates in the range of the values of text files in caption folder  
+  - Click '**Generate**' button to generate images  
+  - The generated images are saved in '**cond_text_samples**' folder  
   
