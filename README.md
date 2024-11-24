@@ -3,8 +3,8 @@
 
 ## Train and Generate Diffusion (DDPM) with your customized Dataset.  
 **Forked from**: https://github.com/explainingai-code/StableDiffusion-PyTorch  
-**Caution**: Network structure is modified from the well-known stable diffusion. 
-               Thus you have to prepare your own dataset and train from zero.
+**Caution**: The network structure is modified from the original stable diffusion for customized dataset.  
+             Thus you have to prepare your own dataset and train from zero.
 
 ## Main features
 - Training VQVAE for AutoEncoder.  
