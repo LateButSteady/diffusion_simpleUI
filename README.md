@@ -43,7 +43,6 @@
      pip install torch-1.11.0+cu115-cp39-cp39-win_amd64.whl
      pip install torchvision-0.12.0+cu115-cp39-cp39-win_amd64
      ```
-     <br>
    - **tokenizer**
      - Access URL: https://huggingface.co/openai/clip-vit-base-patch16/tree/main
      - Click the Files tab next to Model card
