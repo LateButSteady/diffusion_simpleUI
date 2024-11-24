@@ -26,8 +26,7 @@
      pip install virtualenv
      virtualenv venv --python=[Python installation path]\Scripts\python.exe
      ```
-     <br>
-   - A folder named venv will be created in the current directory
+   - A folder named 'venv' will be created in the current directory
    - Run the run_venv.bat file; if a command prompt starting with (venv) appears, the setup is successful
 
 ### Virtual Environment Setup
